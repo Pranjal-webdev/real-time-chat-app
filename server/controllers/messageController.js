@@ -1,5 +1,6 @@
 import Message from "../models/Message.js";
 import Conversation from "../models/Conversation.js";
+import { getIO } from "../socket/socket.js";
 
 export const sendMessage = async (req, res) => {
     try {
@@ -47,11 +48,20 @@ export const sendMessage = async (req, res) => {
         const populatedMessage = await Message.findById(message._id)
             .populate("sender", "name email profileImage");
 
+        const io = getIO();
+
+            io.to(`conversation:${conversationId}`).emit(
+            "newMessage",
+            populatedMessage
+        );
+
         res.status(201).json({
             success: true,
             message: populatedMessage,
         });
+
     } catch (error) {
+
         console.error("Send Message Error:", error.message);
 
         res.status(500).json({
@@ -62,6 +72,7 @@ export const sendMessage = async (req, res) => {
 };
 
 export const getMessages = async (req, res) => {
+    
     try {
         const { conversationId } = req.params;
 
