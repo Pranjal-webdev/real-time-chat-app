@@ -8,7 +8,7 @@ function App() {
         socket.on("connect", () => {
             console.log("Socket connected:", socket.id);
 
-            socket.emit("joinConversation", "6a7dc1ebf7d29fd73e49f500");
+            socket.emit("joinConversation", "6a83193403d17d711ce29ef5");
         });
 
         socket.on("newMessage", (message) => {
