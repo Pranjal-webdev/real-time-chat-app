@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import socket from "./socket/socket";
+import Chat from "./pages/Chat";
 
 function App() {
     useEffect(() => {
@@ -27,7 +28,7 @@ function App() {
         };
     }, []);
 
-    return <h1>Real-Time Chat App</h1>;
+    return <Chat />;
 }
 
 export default App;
