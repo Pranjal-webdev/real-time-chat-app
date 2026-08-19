@@ -14,6 +14,7 @@ const MessageInput = () => {
     };
 
     return (
+        
         <form
             onSubmit={handleSubmit}
             className="bg-white border-t p-4 flex gap-3"
