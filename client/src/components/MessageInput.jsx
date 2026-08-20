@@ -1,16 +1,46 @@
 import { useState } from "react";
+import axios from "axios";
 
-const MessageInput = () => {
+
+const MessageInput = ({ conversationId,onMessageSent }) => {
+
     const [message, setMessage] = useState("");
+    const [sending, setSending] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit =  async (e) => {
         e.preventDefault();
 
-        if (!message.trim()) return;
+        if (!message.trim() || sending) return;
 
-        console.log("Message:", message);
+        try {
+            setSending(true);
 
-        setMessage("");
+            const token = localStorage.getItem("token");
+
+            const response = await axios.post(
+                "http://localhost:5001/api/messages",
+                {
+                    conversationId,
+                    text: message.trim(),
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            onMessageSent(response.data.message);
+
+            setMessage("");
+        } catch (error) {
+            console.error(
+                "Send Message Error:",
+                error.response?.data || error.message
+            );
+        } finally {
+            setSending(false);
+        }
     };
 
     return (
@@ -31,7 +61,8 @@ const MessageInput = () => {
                 type="submit"
                 className="bg-blue-600 text-white px-6 rounded-lg"
             >
-                Send
+                {sending ? "Sending..." : "Send"}
+
             </button>
         </form>
     );
