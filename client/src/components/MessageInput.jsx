@@ -33,11 +33,13 @@ const MessageInput = ({ conversationId,onMessageSent }) => {
             onMessageSent(response.data.message);
 
             setMessage("");
+
         } catch (error) {
             console.error(
                 "Send Message Error:",
                 error.response?.data || error.message
             );
+            
         } finally {
             setSending(false);
         }

@@ -2,6 +2,7 @@ import Conversation from "../models/Conversation.js";
 import User from "../models/User.js";
 
 export const createConversation = async (req, res) => {
+    
     try {
         const { userId } = req.body;
 

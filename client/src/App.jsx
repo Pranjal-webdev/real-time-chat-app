@@ -3,6 +3,7 @@ import socket from "./socket/socket";
 import Chat from "./pages/Chat";
 
 function App() {
+    
     useEffect(() => {
         socket.connect();
 

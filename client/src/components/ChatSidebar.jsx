@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const ChatSidebar = () => {
+const ChatSidebar = ({ onSelectConversation }) => {
 
     const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -21,6 +21,8 @@ const ChatSidebar = () => {
                         },
                     }
                 );
+
+                console.log("CONVERSATION RESPONSE:", response.data);
 
                 setConversations(
                     response.data.conversations || []

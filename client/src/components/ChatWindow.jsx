@@ -8,6 +8,8 @@ const ChatWindow = ({conversation}) => {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    const currentUserId = localStorage.getItem("userId");
+
 
     useEffect(() => {
         if (!conversation) return;
@@ -31,6 +33,7 @@ const ChatWindow = ({conversation}) => {
                 setMessages(response.data.messages || []);
 
             } catch (error) {
+
                 console.error(
                     "Fetch Messages Error:",
                     error.response?.data || error.message
@@ -43,39 +46,58 @@ const ChatWindow = ({conversation}) => {
 
         fetchMessages();
 
-        socket.connect();
+        if (!socket.connected) {
 
-        socket.on("connect", () => {
+            socket.connect();
+        }
+
+        const handleConnect = () => {
+
             console.log("Socket connected:", socket.id);
 
             socket.emit(
                 "joinConversation",
                 conversation._id
             );
-        });
+        };
 
-        socket.on("newMessage", (message) => {
+        const handleNewMessage = (message) => {
+
             console.log("New message received:", message);
 
+            const messageConversationId =
+                message.conversation?._id ||
+                message.conversation;
+
             if (
-
-                message.conversation?.toString() === conversation._id.toString() ||
-                message.conversation?._id?.toString() ===
-                    conversation._id.toString()
-
+                messageConversationId?.toString() ===
+                conversation._id.toString()
             ) {
-                setMessages((prevMessages) => [
-                    ...prevMessages,
+                setMessages((prev) => [
+                    ...prev,
                     message,
                 ]);
             }
-        });
+        };
+
+        socket.on("connect", handleConnect);
+        socket.on("newMessage", handleNewMessage);
+
+
+        if (socket.connected) {
+
+            socket.emit(
+                "joinConversation",
+                conversation._id
+            );
+        };
 
         return () => {
-            socket.off("connect");
-            socket.off("newMessage");
+            socket.off("connect", handleConnect);
+            socket.off("newMessage", handleNewMessage);
         };
     }, [conversation]);
+
 
     if (!conversation) {
         return (
@@ -88,36 +110,76 @@ const ChatWindow = ({conversation}) => {
 
     return (
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col bg-gray-100">
 
             <div className="bg-white border-b p-5">
-
-                <h2 className="font-semibold">
-                     Chat
+                <h2 className="font-semibold text-lg">
+                    Chat
                 </h2>
             </div>
 
-            <div className="flex-1 p-5 overflow-y-auto space-y-3">
+            <div className="flex-1 p-5 overflow-y-auto">
 
                 {loading ? (
-                    <p className="text-gray-500">
+                    <p className="text-gray-500 text-center">
                         Loading messages...
                     </p>
                 ) : messages.length === 0 ? (
-                    <p className="text-center text-gray-500">
+                    <p className="text-gray-500 text-center mt-10">
                         No messages yet
                     </p>
                 ) : (
-                    messages.map((message) => (
-                        <div
-                            key={message._id}
-                            className="bg-white p-3 rounded-lg shadow-sm max-w-md"
-                        >
-                            <p className="text-sm text-gray-800">
-                                {message.text}
-                            </p>
-                        </div>
-                    ))
+                    <div className="space-y-3">
+
+                        {messages.map((message) => {
+                            const senderId =
+                                message.sender?._id ||
+                                message.sender;
+
+                            const isMine =
+                                senderId?.toString() ===
+                                currentUserId?.toString();
+
+                            return (
+                                <div
+                                    key={message._id}
+                                    className={`flex ${
+                                        isMine
+                                            ? "justify-end"
+                                            : "justify-start"
+                                    }`}
+                                >
+                                    <div
+                                        className={`max-w-md px-4 py-3 rounded-2xl ${
+                                            isMine
+                                                ? "bg-blue-600 text-white rounded-br-none"
+                                                : "bg-white text-gray-800 rounded-bl-none shadow-sm"
+                                        }`}
+                                    >
+                                        <p>
+                                            {message.text}
+                                        </p>
+
+                                        <p
+                                            className={`text-xs mt-1 ${
+                                                isMine
+                                                    ? "text-blue-100"
+                                                    : "text-gray-400"
+                                            }`}
+                                        >
+                                            {new Date(
+                                                message.createdAt
+                                            ).toLocaleTimeString([], {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            })}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                    </div>
                 )}
 
             </div>
@@ -133,7 +195,7 @@ const ChatWindow = ({conversation}) => {
             />
 
         </div>
-    );
+    )
 };
 
 export default ChatWindow;
