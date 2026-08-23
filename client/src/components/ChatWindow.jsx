@@ -3,10 +3,12 @@ import axios from "axios";
 import socket from "../socket/socket";
 import MessageInput from "./MessageInput";
 
-const ChatWindow = ({conversation}) => {
+const ChatWindow = ({ conversation }) => {
 
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
+    const [isOnline, setIsOnline] = useState(false);
 
     const currentUserId = localStorage.getItem("userId");
 
@@ -73,6 +75,15 @@ const ChatWindow = ({conversation}) => {
                 messageConversationId?.toString() ===
                 conversation._id.toString()
             ) {
+                const senderId = message.sender?._id || message.sender;
+
+                if (
+                    senderId?.toString() ===
+                    currentUserId?.toString()
+                ) {
+                    return;
+                }
+
                 setMessages((prev) => [
                     ...prev,
                     message,
@@ -82,6 +93,28 @@ const ChatWindow = ({conversation}) => {
 
         socket.on("connect", handleConnect);
         socket.on("newMessage", handleNewMessage);
+
+        const handleTyping = () => {
+            setIsTyping(true);
+        };
+
+        const handleUserOnline = () => {
+            setIsOnline(true);
+        };
+
+        const handleUserOffline = () => {
+            setIsOnline(false);
+        };
+
+        socket.on("userOnline", handleUserOnline);
+        socket.on("userOffline", handleUserOffline);
+
+        const handleStopTyping = () => {
+            setIsTyping(false);
+        };
+
+        socket.on("typing", handleTyping);
+        socket.on("stopTyping", handleStopTyping);
 
 
         if (socket.connected) {
@@ -95,6 +128,10 @@ const ChatWindow = ({conversation}) => {
         return () => {
             socket.off("connect", handleConnect);
             socket.off("newMessage", handleNewMessage);
+            socket.off("typing", handleTyping);
+            socket.off("stopTyping", handleStopTyping);
+            socket.off("userOnline", handleUserOnline);
+            socket.off("userOffline", handleUserOffline);
         };
     }, [conversation]);
 
@@ -113,9 +150,15 @@ const ChatWindow = ({conversation}) => {
         <div className="flex-1 flex flex-col bg-gray-100">
 
             <div className="bg-white border-b p-5">
+                
                 <h2 className="font-semibold text-lg">
                     Chat
                 </h2>
+
+                <p className="text-sm text-gray-500">
+                    {isOnline ? "🟢 Online" : "⚫ Offline"}
+                </p>
+
             </div>
 
             <div className="flex-1 p-5 overflow-y-auto">
@@ -143,29 +186,26 @@ const ChatWindow = ({conversation}) => {
                             return (
                                 <div
                                     key={message._id}
-                                    className={`flex ${
-                                        isMine
-                                            ? "justify-end"
-                                            : "justify-start"
-                                    }`}
+                                    className={`flex ${isMine
+                                        ? "justify-end"
+                                        : "justify-start"
+                                        }`}
                                 >
                                     <div
-                                        className={`max-w-md px-4 py-3 rounded-2xl ${
-                                            isMine
-                                                ? "bg-blue-600 text-white rounded-br-none"
-                                                : "bg-white text-gray-800 rounded-bl-none shadow-sm"
-                                        }`}
+                                        className={`max-w-md px-4 py-3 rounded-2xl ${isMine
+                                            ? "bg-blue-600 text-white rounded-br-none"
+                                            : "bg-white text-gray-800 rounded-bl-none shadow-sm"
+                                            }`}
                                     >
                                         <p>
                                             {message.text}
                                         </p>
 
                                         <p
-                                            className={`text-xs mt-1 ${
-                                                isMine
-                                                    ? "text-blue-100"
-                                                    : "text-gray-400"
-                                            }`}
+                                            className={`text-xs mt-1 ${isMine
+                                                ? "text-blue-100"
+                                                : "text-gray-400"
+                                                }`}
                                         >
                                             {new Date(
                                                 message.createdAt
@@ -183,6 +223,12 @@ const ChatWindow = ({conversation}) => {
                 )}
 
             </div>
+
+            {isTyping && (
+                <p className="text-sm text-gray-500 px-5 pb-2">
+                    User is typing...
+                </p>
+            )}
 
             <MessageInput
                 conversationId={conversation._id}

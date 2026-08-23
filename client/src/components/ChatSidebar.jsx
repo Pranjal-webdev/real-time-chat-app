@@ -27,6 +27,7 @@ const ChatSidebar = ({ onSelectConversation }) => {
                 setConversations(
                     response.data.conversations || []
                 );
+                
             } catch (error) {
                 console.error(
                     "Fetch Conversations Error:",
@@ -43,14 +44,12 @@ const ChatSidebar = ({ onSelectConversation }) => {
     return (
         <div className="w-80 bg-white border-r border-gray-200 h-full">
 
-            {/* Header */}
             <div className="p-5 border-b">
                 <h2 className="text-xl font-bold">
                     Chats
                 </h2>
             </div>
 
-            {/* Conversations */}
             <div>
                 {loading ? (
                     <p className="p-4 text-gray-500">

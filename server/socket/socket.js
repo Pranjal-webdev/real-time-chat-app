@@ -16,13 +16,28 @@ export const initializeSocket = (server) => {
         socket.on("joinConversation", (conversationId) => {
             socket.join(`conversation:${conversationId}`);
 
+            socket.to(`conversation:${conversationId}`).emit("userOnline");
+
             console.log(
                 `${socket.id} joined conversation:${conversationId}`
             );
         });
 
+        socket.on("typing", (conversationId) => {
+            socket
+                .to(`conversation:${conversationId}`)
+                .emit("typing");
+        });
+
+        socket.on("stopTyping", (conversationId) => {
+            socket
+                .to(`conversation:${conversationId}`)
+                .emit("stopTyping");
+        });
+
         socket.on("disconnect", () => {
             console.log("User disconnected:", socket.id);
+            socket.broadcast.emit("userOffline");
         });
     });
 

@@ -1,13 +1,13 @@
 import { useState } from "react";
 import axios from "axios";
+import socket from "../socket/socket";
 
-
-const MessageInput = ({ conversationId,onMessageSent }) => {
+const MessageInput = ({ conversationId, onMessageSent }) => {
 
     const [message, setMessage] = useState("");
     const [sending, setSending] = useState(false);
 
-    const handleSubmit =  async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!message.trim() || sending) return;
@@ -39,14 +39,14 @@ const MessageInput = ({ conversationId,onMessageSent }) => {
                 "Send Message Error:",
                 error.response?.data || error.message
             );
-            
+
         } finally {
             setSending(false);
         }
     };
 
     return (
-        
+
         <form
             onSubmit={handleSubmit}
             className="bg-white border-t p-4 flex gap-3"
@@ -54,7 +54,18 @@ const MessageInput = ({ conversationId,onMessageSent }) => {
             <input
                 type="text"
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={(e) => {
+                    setMessage(e.target.value);
+
+                    if (e.target.value.trim()) {
+                        socket.emit("typing", conversationId);
+                    } else {
+                        socket.emit("stopTyping", conversationId);
+                    }
+                }}
+                onBlur={() => {
+                    socket.emit("stopTyping", conversationId);
+                }}
                 placeholder="Type a message..."
                 className="flex-1 border rounded-lg px-4 py-3 outline-none"
             />

@@ -60,3 +60,28 @@ export const createConversation = async (req, res) => {
         });
     }
 };
+
+export const getConversations = async (req, res) => {
+
+    try {
+        const conversations = await Conversation.find({
+            participants: req.user._id,
+        })
+            .populate("participants", "name email profileImage")
+            .populate("lastMessage")
+            .sort({ updatedAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            conversations,
+        });
+        
+    } catch (error) {
+        console.error("Get Conversations Error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};

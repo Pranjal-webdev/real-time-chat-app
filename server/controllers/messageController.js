@@ -3,6 +3,7 @@ import Conversation from "../models/Conversation.js";
 import { getIO } from "../socket/socket.js";
 
 export const sendMessage = async (req, res) => {
+
     try {
         const { conversationId, text } = req.body;
 
@@ -47,6 +48,10 @@ export const sendMessage = async (req, res) => {
 
         const populatedMessage = await Message.findById(message._id)
             .populate("sender", "name email profileImage");
+
+        getIO()
+            .to(`conversation:${conversationId}`)
+            .emit("newMessage", populatedMessage);
 
         const io = getIO();
 
