@@ -12,6 +12,82 @@ const ChatWindow = ({ conversation }) => {
 
     const currentUserId = localStorage.getItem("userId");
 
+    const handleDeleteMessage = async (messageId) => {
+
+        try {
+            const token = localStorage.getItem("token");
+
+            await axios.delete(
+                `http://localhost:5001/api/messages/${messageId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            setMessages((prev) =>
+                prev.filter((message) => message._id !== messageId)
+            );
+
+            socket.emit("deleteMessage", {
+                conversationId: conversation._id,
+                messageId,
+            });
+
+
+        } catch (error) {
+            console.error(
+                "Delete Message Error:",
+                error.response?.data || error.message
+            );
+        }
+    };
+
+
+    const handleEditMessage = async (message) => {
+        const newText = prompt("Edit message:", message.text);
+
+        if (!newText || !newText.trim()) return;
+
+        try {
+            const token = localStorage.getItem("token");
+
+            const response = await axios.put(
+                `http://localhost:5001/api/messages/${message._id}`,
+                {
+                    text: newText.trim(),
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            const updatedMessage = response.data.updatedMessage;
+
+            setMessages((prev) =>
+                prev.map((item) =>
+                    item._id === message._id
+                        ? updatedMessage
+                        : item
+                )
+            );
+
+            socket.emit("editMessage", {
+                conversationId: conversation._id,
+                message: updatedMessage,
+            });
+
+        } catch (error) {
+            console.error(
+                "Edit Message Error:",
+                error.response?.data || error.message
+            );
+        }
+    };
+
 
     useEffect(() => {
         if (!conversation) return;
@@ -57,10 +133,12 @@ const ChatWindow = ({ conversation }) => {
 
             console.log("Socket connected:", socket.id);
 
-            socket.emit(
-                "joinConversation",
-                conversation._id
-            );
+            socket.emit("joinConversation", conversation._id);
+
+            socket.emit("markMessagesRead", {
+                conversationId: conversation._id,
+                userId: currentUserId,
+            });
         };
 
         const handleNewMessage = (message) => {
@@ -91,8 +169,26 @@ const ChatWindow = ({ conversation }) => {
             }
         };
 
+        const handleMessageDeleted = ({ messageId }) => {
+            setMessages((prev) =>
+                prev.filter((message) => message._id !== messageId)
+            );
+        };
+
+        const handleMessageEdited = (updatedMessage) => {
+            setMessages((prev) =>
+                prev.map((message) =>
+                    message._id === updatedMessage._id
+                        ? updatedMessage
+                        : message
+                )
+            );
+        };
+
         socket.on("connect", handleConnect);
         socket.on("newMessage", handleNewMessage);
+        socket.on("messageDeleted", handleMessageDeleted);
+        socket.on("messageEdited", handleMessageEdited);
 
         const handleTyping = () => {
             setIsTyping(true);
@@ -106,8 +202,26 @@ const ChatWindow = ({ conversation }) => {
             setIsOnline(false);
         };
 
+        const handleMessagesRead = ({ conversationId }) => {
+            if (
+                conversationId.toString() !==
+                conversation._id.toString()
+            ) {
+                return;
+            }
+
+            setMessages((prev) =>
+                prev.map((message) => ({
+                    ...message,
+                    read: true,
+                    isRead: true,
+                }))
+            );
+        };
+
         socket.on("userOnline", handleUserOnline);
         socket.on("userOffline", handleUserOffline);
+        socket.on("messagesRead", handleMessagesRead);
 
         const handleStopTyping = () => {
             setIsTyping(false);
@@ -119,11 +233,13 @@ const ChatWindow = ({ conversation }) => {
 
         if (socket.connected) {
 
-            socket.emit(
-                "joinConversation",
-                conversation._id
-            );
-        };
+            socket.emit("joinConversation", conversation._id);
+
+            socket.emit("markMessagesRead", {
+                conversationId: conversation._id,
+                userId: currentUserId,
+            });
+        }
 
         return () => {
             socket.off("connect", handleConnect);
@@ -132,11 +248,15 @@ const ChatWindow = ({ conversation }) => {
             socket.off("stopTyping", handleStopTyping);
             socket.off("userOnline", handleUserOnline);
             socket.off("userOffline", handleUserOffline);
+            socket.off("messagesRead", handleMessagesRead);
+            socket.off("messageDeleted", handleMessageDeleted);
+            socket.off("messageEdited", handleMessageEdited);
         };
     }, [conversation]);
 
 
     if (!conversation) {
+
         return (
             <div className="flex-1 flex items-center justify-center text-gray-500">
                 Select a conversation to start messaging
@@ -150,7 +270,7 @@ const ChatWindow = ({ conversation }) => {
         <div className="flex-1 flex flex-col bg-gray-100">
 
             <div className="bg-white border-b p-5">
-                
+
                 <h2 className="font-semibold text-lg">
                     Chat
                 </h2>
@@ -201,6 +321,12 @@ const ChatWindow = ({ conversation }) => {
                                             {message.text}
                                         </p>
 
+                                        {message.isEdited && (
+                                            <span className="text-xs opacity-70">
+                                                edited
+                                            </span>
+                                        )}
+
                                         <p
                                             className={`text-xs mt-1 ${isMine
                                                 ? "text-blue-100"
@@ -214,6 +340,30 @@ const ChatWindow = ({ conversation }) => {
                                                 minute: "2-digit",
                                             })}
                                         </p>
+
+                                        {isMine && (
+                                            <button
+                                                onClick={() => handleDeleteMessage(message._id)}
+                                                className="text-xs mt-2 underline"
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
+
+                                        {isMine && (
+                                            <button
+                                                onClick={() => handleEditMessage(message)}
+                                                className="text-xs mt-2 underline"
+                                            >
+                                                Edit
+                                            </button>
+                                        )}
+
+                                        {isMine && message.read && (
+                                            <p className="text-xs text-blue-200">
+                                                ✓✓ Seen
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             );

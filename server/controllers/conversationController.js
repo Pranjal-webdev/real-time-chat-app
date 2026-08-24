@@ -1,8 +1,9 @@
 import Conversation from "../models/Conversation.js";
 import User from "../models/User.js";
+import Message from "../models/Message.js";
 
 export const createConversation = async (req, res) => {
-    
+
     try {
         const { userId } = req.body;
 
@@ -71,11 +72,27 @@ export const getConversations = async (req, res) => {
             .populate("lastMessage")
             .sort({ updatedAt: -1 });
 
+        const conversationsWithUnread = await Promise.all(
+            conversations.map(async (conversation) => {
+                const unreadCount = await Message.countDocuments({
+                    conversation: conversation._id,
+                    sender: { $ne: req.user._id },
+                    read: false,
+                });
+
+                return {
+                    ...conversation.toObject(),
+                    unreadCount,
+                };
+            })
+        );
+
+
         res.status(200).json({
             success: true,
             conversations,
         });
-        
+
     } catch (error) {
         console.error("Get Conversations Error:", error);
 

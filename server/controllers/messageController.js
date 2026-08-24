@@ -55,7 +55,7 @@ export const sendMessage = async (req, res) => {
 
         const io = getIO();
 
-            io.to(`conversation:${conversationId}`).emit(
+        io.to(`conversation:${conversationId}`).emit(
             "newMessage",
             populatedMessage
         );
@@ -77,7 +77,7 @@ export const sendMessage = async (req, res) => {
 };
 
 export const getMessages = async (req, res) => {
-    
+
     try {
         const { conversationId } = req.params;
 
@@ -102,6 +102,33 @@ export const getMessages = async (req, res) => {
             });
         }
 
+        await Message.updateMany(
+            {
+                conversation: conversationId,
+                sender: { $ne: req.user._id },
+                $or: [
+                    { read: false },
+                    { isRead: false }
+                ],
+            },
+            {
+                $set: {
+                    read: true,
+                    isRead: true,
+                }
+            }
+        );
+
+        const io = getIO();
+
+        io.to(`conversation:${conversationId}`).emit(
+            "messagesRead",
+            {
+                conversationId,
+                userId: req.user._id,
+            }
+        );
+
         const messages = await Message.find({
             conversation: conversationId,
         })
@@ -114,6 +141,94 @@ export const getMessages = async (req, res) => {
         });
     } catch (error) {
         console.error("Get Messages Error:", error.message);
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};
+
+
+export const deleteMessage = async (req, res) => {
+    try {
+        const { messageId } = req.params;
+
+        const message = await Message.findById(messageId);
+
+        if (!message) {
+            return res.status(404).json({
+                success: false,
+                message: "Message not found",
+            });
+        }
+
+        if (message.sender.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "You can delete only your own messages",
+            });
+        }
+
+        await Message.findByIdAndDelete(messageId);
+
+        res.status(200).json({
+            success: true,
+            message: "Message deleted successfully",
+            messageId,
+        });
+
+    } catch (error) {
+        console.error("Delete Message Error:", error.message);
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};
+
+export const editMessage = async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const { text } = req.body;
+
+        if (!text || !text.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "Message text is required",
+            });
+        }
+
+        const message = await Message.findById(messageId);
+
+        if (!message) {
+            return res.status(404).json({
+                success: false,
+                message: "Message not found",
+            });
+        }
+
+        if (message.sender.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "You can edit only your own messages",
+            });
+        }
+
+        message.text = text.trim();
+        message.isEdited = true;
+
+        await message.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Message updated successfully",
+            updatedMessage: message,
+        });
+
+    } catch (error) {
+        console.error("Edit Message Error:", error.message);
 
         res.status(500).json({
             success: false,

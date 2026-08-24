@@ -11,20 +11,16 @@ function App() {
             console.log("Socket connected:", socket.id);
         });
 
-        socket.on("newMessage", (message) => {
-            console.log("New message received:", message);
-        });
-
         socket.on("disconnect", () => {
             console.log("Socket disconnected");
         });
 
         return () => {
             socket.off("connect");
-            socket.off("newMessage");
             socket.off("disconnect");
             socket.disconnect();
         };
+        
     }, []);
 
     return <Chat />;

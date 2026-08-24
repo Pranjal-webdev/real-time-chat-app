@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import socket from "../socket/socket";
 
 const ChatSidebar = ({ onSelectConversation }) => {
 
@@ -9,7 +10,7 @@ const ChatSidebar = ({ onSelectConversation }) => {
     useEffect(() => {
 
         const fetchConversations = async () => {
-            
+
             try {
                 const token = localStorage.getItem("token");
 
@@ -22,12 +23,10 @@ const ChatSidebar = ({ onSelectConversation }) => {
                     }
                 );
 
-                console.log("CONVERSATION RESPONSE:", response.data);
-
                 setConversations(
                     response.data.conversations || []
                 );
-                
+
             } catch (error) {
                 console.error(
                     "Fetch Conversations Error:",
@@ -39,7 +38,37 @@ const ChatSidebar = ({ onSelectConversation }) => {
         };
 
         fetchConversations();
+
+        const handleNewMessage = (message) => {
+
+            const conversationId =
+                message.conversation?._id ||
+                message.conversation;
+
+            setConversations((prev) =>
+                prev.map((conversation) => {
+                    if (
+                        conversation._id.toString() ===
+                        conversationId.toString()
+                    ) {
+                        return {
+                            ...conversation,
+                            lastMessage: message,
+                        };
+                    }
+
+                    return conversation;
+                })
+            );
+        };
+
+        socket.on("newMessage", handleNewMessage);
+
+        return () => {
+            socket.off("newMessage", handleNewMessage);
+        };
     }, []);
+
 
     return (
         <div className="w-80 bg-white border-r border-gray-200 h-full">
@@ -63,19 +92,35 @@ const ChatSidebar = ({ onSelectConversation }) => {
                     conversations.map((conversation) => (
                         <button
                             key={conversation._id}
-                            onClick={() =>
+                            onClick={() => {
                                 onSelectConversation(conversation)
-                            }
+                                setConversations((prev) =>
+                                    prev.map((item) =>
+                                        item._id === conversation._id
+                                            ? { ...item, unreadCount: 0 }
+                                            : item
+                                    )
+                                );
+                            }}
                             className="w-full text-left p-4 border-b hover:bg-gray-100"
                         >
                             <p className="font-semibold">
                                 Chat
                             </p>
 
-                            <p className="text-sm text-gray-500">
-                                {conversation.lastMessage?.text ||
-                                    "No messages yet"}
-                            </p>
+                            <div className="flex justify-between items-center">
+                                <p className="text-sm text-gray-500">
+                                    {conversation.lastMessage?.text ||
+                                        "No messages yet"}
+                                </p>
+
+                                {conversation.unreadCount > 0 && (
+                                    <span className="ml-2 bg-blue-600 text-white text-xs rounded-full px-2 py-1">
+                                        {conversation.unreadCount}
+                                    </span>
+                                )}
+
+                            </div>
                         </button>
                     ))
                 )}

@@ -23,6 +23,29 @@ export const initializeSocket = (server) => {
             );
         });
 
+        socket.on("markMessagesRead", ({ conversationId, userId }) => {
+            socket
+                .to(`conversation:${conversationId}`)
+                .emit("messagesRead", {
+                    conversationId,
+                    userId,
+                });
+        });
+
+        socket.on("deleteMessage", ({ conversationId, messageId }) => {
+            io.to(`conversation:${conversationId}`).emit(
+                "messageDeleted",
+                { messageId }
+            );
+        });
+
+        socket.on("editMessage", ({ conversationId, message }) => {
+            io.to(`conversation:${conversationId}`).emit(
+                "messageEdited",
+                message
+            );
+        });
+
         socket.on("typing", (conversationId) => {
             socket
                 .to(`conversation:${conversationId}`)
