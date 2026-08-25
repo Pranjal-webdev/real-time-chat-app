@@ -90,7 +90,7 @@ export const getConversations = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            conversations,
+            conversations: conversationsWithUnread,
         });
 
     } catch (error) {

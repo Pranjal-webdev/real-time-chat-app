@@ -12,7 +12,21 @@ const ChatWindow = ({ conversation }) => {
 
     const currentUserId = localStorage.getItem("userId");
 
+    const otherUser = conversation?.participants?.find(
+        (user) =>
+            (user._id || user).toString() !==
+            currentUserId?.toString()
+    );
+
+    const otherUserId = otherUser?._id || otherUser;
+
     const handleDeleteMessage = async (messageId) => {
+
+        const confirmDelete = window.confirm(
+            "Are you sure you want to delete this message?"
+        );
+
+        if (!confirmDelete) return;
 
         try {
             const token = localStorage.getItem("token");
@@ -34,7 +48,6 @@ const ChatWindow = ({ conversation }) => {
                 conversationId: conversation._id,
                 messageId,
             });
-
 
         } catch (error) {
             console.error(
@@ -90,6 +103,7 @@ const ChatWindow = ({ conversation }) => {
 
 
     useEffect(() => {
+
         if (!conversation) return;
 
         const fetchMessages = async () => {
@@ -195,11 +209,21 @@ const ChatWindow = ({ conversation }) => {
         };
 
         const handleUserOnline = () => {
-            setIsOnline(true);
+            if (
+                userId?.toString() ===
+                otherUserId?.toString()
+            ) {
+                setIsOnline(true);
+            }
         };
 
         const handleUserOffline = () => {
-            setIsOnline(false);
+            if (
+                userId?.toString() ===
+                otherUserId?.toString()
+            ) {
+                setIsOnline(false);
+            }
         };
 
         const handleMessagesRead = ({ conversationId }) => {
@@ -242,6 +266,7 @@ const ChatWindow = ({ conversation }) => {
         }
 
         return () => {
+
             socket.off("connect", handleConnect);
             socket.off("newMessage", handleNewMessage);
             socket.off("typing", handleTyping);
@@ -252,7 +277,7 @@ const ChatWindow = ({ conversation }) => {
             socket.off("messageDeleted", handleMessageDeleted);
             socket.off("messageEdited", handleMessageEdited);
         };
-    }, [conversation]);
+    }, [conversation,otherUserId]);
 
 
     if (!conversation) {
@@ -272,7 +297,7 @@ const ChatWindow = ({ conversation }) => {
             <div className="bg-white border-b p-5">
 
                 <h2 className="font-semibold text-lg">
-                    Chat
+                    {otherUser?.name || "Chat"}
                 </h2>
 
                 <p className="text-sm text-gray-500">

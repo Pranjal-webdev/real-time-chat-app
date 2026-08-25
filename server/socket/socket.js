@@ -2,10 +2,15 @@ import { Server } from "socket.io";
 
 let io;
 
+const onlineUsers = new Map();
+
 export const initializeSocket = (server) => {
     io = new Server(server, {
         cors: {
-            origin: process.env.CLIENT_URL,
+            origin: [
+            "http://localhost:5173",
+            "http://localhost:5174",
+        ],
             credentials: true,
         },
     });
@@ -46,6 +51,13 @@ export const initializeSocket = (server) => {
             );
         });
 
+        socket.on("deleteMessage", ({ conversationId, messageId }) => {
+            io.to(`conversation:${conversationId}`).emit(
+                "messageDeleted",
+                { messageId }
+            );
+        });
+
         socket.on("typing", (conversationId) => {
             socket
                 .to(`conversation:${conversationId}`)
@@ -58,13 +70,30 @@ export const initializeSocket = (server) => {
                 .emit("stopTyping");
         });
 
-        socket.on("disconnect", () => {
-            console.log("User disconnected:", socket.id);
-            socket.broadcast.emit("userOffline");
-        });
-    });
+        socket.on("userOnline", (userId) => {
+            onlineUsers.set(userId.toString(), socket.id);
 
-    return io;
+            socket.broadcast.emit("userOnline", {
+                userId,
+            });
+        });
+
+        socket.on("disconnect", () => {
+            for (const [userId, socketId] of onlineUsers.entries()) {
+                if (socketId === socket.id) {
+                    onlineUsers.delete(userId);
+
+                    socket.broadcast.emit("userOffline", {
+                        userId,
+                    });
+
+                    break;
+                }
+            }
+        });
+
+        return io;
+    });
 };
 
 export const getIO = () => {

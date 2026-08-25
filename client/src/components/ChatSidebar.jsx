@@ -45,8 +45,16 @@ const ChatSidebar = ({ onSelectConversation }) => {
                 message.conversation?._id ||
                 message.conversation;
 
+            const currentUserId =
+                localStorage.getItem("userId");
+
+            const senderId =
+                message.sender?._id ||
+                message.sender;
+
             setConversations((prev) =>
                 prev.map((conversation) => {
+                    
                     if (
                         conversation._id.toString() ===
                         conversationId.toString()
@@ -54,6 +62,11 @@ const ChatSidebar = ({ onSelectConversation }) => {
                         return {
                             ...conversation,
                             lastMessage: message,
+                            unreadCount:
+                                senderId?.toString() !==
+                                    currentUserId?.toString()
+                                    ? (conversation.unreadCount || 0) + 1
+                                    : conversation.unreadCount,
                         };
                     }
 
