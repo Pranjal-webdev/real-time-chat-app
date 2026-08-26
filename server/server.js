@@ -7,6 +7,8 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import conversationRoutes from "./routes/conversationRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import path from "path";
 
 dotenv.config();
 connectDB();
@@ -33,6 +35,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/users", userRoutes);
+app.use("/uploads",express.static(path.join(process.cwd(), "uploads")));
 
 app.get("/", (req, res) => {
     res.json({

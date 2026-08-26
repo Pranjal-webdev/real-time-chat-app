@@ -9,6 +9,7 @@ const ChatWindow = ({ conversation }) => {
     const [loading, setLoading] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
     const [isOnline, setIsOnline] = useState(false);
+    const [replyTo, setReplyTo] = useState(null);
 
     const currentUserId = localStorage.getItem("userId");
 
@@ -277,7 +278,7 @@ const ChatWindow = ({ conversation }) => {
             socket.off("messageDeleted", handleMessageDeleted);
             socket.off("messageEdited", handleMessageEdited);
         };
-    }, [conversation,otherUserId]);
+    }, [conversation, otherUserId]);
 
 
     if (!conversation) {
@@ -342,6 +343,42 @@ const ChatWindow = ({ conversation }) => {
                                             : "bg-white text-gray-800 rounded-bl-none shadow-sm"
                                             }`}
                                     >
+                                        {message.replyTo && (
+                                            <div className="mb-2 p-2 rounded bg-black/10 border-l-2 border-gray-400">
+                                                <p className="text-xs font-semibold">
+                                                    {message.replyTo.sender?.name || "User"}
+                                                </p>
+
+                                                <p className="text-xs opacity-70 truncate">
+                                                    {message.replyTo.text}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {message.messageType === "image" &&
+                                            message.fileUrl && (
+                                                <img
+                                                    src={`http://localhost:5001${message.fileUrl}`}
+                                                    alt={message.fileName || "Image"}
+                                                    className="max-w-xs rounded-lg"
+                                                />
+                                            )}
+
+                                        {message.messageType === "file" &&
+                                            message.fileUrl && (
+                                                <a
+                                                    href={`http://localhost:5001${message.fileUrl}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="underline"
+                                                >
+                                                    📎 {message.fileName}
+                                                </a>
+                                            )}
+
+                                        {message.messageType === "text" && (
+                                            <p>{message.text}</p>
+                                        )}
                                         <p>
                                             {message.text}
                                         </p>
@@ -384,6 +421,13 @@ const ChatWindow = ({ conversation }) => {
                                             </button>
                                         )}
 
+                                        <button
+                                            onClick={() => setReplyTo(message)}
+                                            className="text-xs mt-2 underline ml-2"
+                                        >
+                                            Reply
+                                        </button>
+
                                         {isMine && message.read && (
                                             <p className="text-xs text-blue-200">
                                                 ✓✓ Seen
@@ -407,11 +451,14 @@ const ChatWindow = ({ conversation }) => {
 
             <MessageInput
                 conversationId={conversation._id}
+                replyTo={replyTo}
+                onCancelReply={() => setReplyTo(null)}
                 onMessageSent={(message) => {
                     setMessages((prev) => [
                         ...prev,
                         message,
                     ]);
+                    setReplyTo(null);
                 }}
             />
 

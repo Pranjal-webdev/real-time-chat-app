@@ -5,7 +5,7 @@ import { getIO } from "../socket/socket.js";
 export const sendMessage = async (req, res) => {
 
     try {
-        const { conversationId, text } = req.body;
+        const { conversationId, text, replyTo } = req.body;
 
         if (!conversationId || !text?.trim()) {
             return res.status(400).json({
@@ -39,7 +39,21 @@ export const sendMessage = async (req, res) => {
             conversation: conversationId,
             sender: req.user._id,
             text: text.trim(),
+            replyTo: replyTo || null,
+            messageType: isImage ? "image" : "file",
+            fileUrl: `/uploads/${req.file.filename}`,
+            fileName: req.file.originalname
         });
+
+        await Conversation.findByIdAndUpdate(
+            conversationId,
+            {
+                lastMessage: message._id,
+            },
+            {
+                new: true,
+            }
+        );
 
         conversation.lastMessage = message._id;
         conversation.lastMessageAt = message.createdAt;
@@ -47,7 +61,14 @@ export const sendMessage = async (req, res) => {
         await conversation.save();
 
         const populatedMessage = await Message.findById(message._id)
-            .populate("sender", "name email profileImage");
+            .populate("sender", "name email profileImage")
+            .populate({
+                path: "replyTo",
+                populate: {
+                    path: "sender",
+                    select: "name email profileImage",
+                },
+            });
 
         getIO()
             .to(`conversation:${conversationId}`)
@@ -62,7 +83,7 @@ export const sendMessage = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: populatedMessage,
+            message: populatedMessage
         });
 
     } catch (error) {
@@ -71,7 +92,7 @@ export const sendMessage = async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: "Server error",
+            message: "Server error"
         });
     }
 };
@@ -133,6 +154,13 @@ export const getMessages = async (req, res) => {
             conversation: conversationId,
         })
             .populate("sender", "name email profileImage")
+            .populate({
+                path: "replyTo",
+                populate: {
+                    path: "sender",
+                    select: "name email profileImage",
+                },
+            })
             .sort({ createdAt: 1 });
 
         res.status(200).json({
@@ -229,6 +257,69 @@ export const editMessage = async (req, res) => {
 
     } catch (error) {
         console.error("Edit Message Error:", error.message);
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};
+
+
+export const uploadMessage = async (req, res) => {
+    try {
+        const { conversationId } = req.body;
+
+        if (!conversationId) {
+            return res.status(400).json({
+                success: false,
+                message: "Conversation ID is required",
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "File is required",
+            });
+        }
+
+        const isImage =
+            req.file.mimetype.startsWith("image/");
+
+        const message = await Message.create({
+            conversation: conversationId,
+            sender: req.user._id,
+            text: "",
+            messageType: isImage ? "image" : "file",
+            fileUrl: `/uploads/${req.file.filename}`,
+            fileName: req.file.originalname,
+        });
+
+        const populatedMessage =
+            await Message.findById(message._id)
+                .populate(
+                    "sender",
+                    "name email profileImage"
+                )
+                .populate({
+                    path: "replyTo",
+                    populate: {
+                        path: "sender",
+                        select: "name email profileImage",
+                    },
+                });
+
+        res.status(201).json({
+            success: true,
+            message: populatedMessage,
+        });
+
+    } catch (error) {
+        console.error(
+            "Upload Message Error:",
+            error.message
+        );
 
         res.status(500).json({
             success: false,

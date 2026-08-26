@@ -27,6 +27,15 @@ const messageSchema = new mongoose.Schema(
             default: "text",
         },
 
+        fileUrl: {
+            type: String,
+            default: null,
+        },
+        fileName: {
+            type: String,
+            default: null,
+        },
+
         isRead: {
             type: Boolean,
             default: false,
@@ -40,6 +49,12 @@ const messageSchema = new mongoose.Schema(
         isEdited: {
             type: Boolean,
             default: false,
+        },
+
+        replyTo: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Message",
+            default: null,
         },
     },
     {
