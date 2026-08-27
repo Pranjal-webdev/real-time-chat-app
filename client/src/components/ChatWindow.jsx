@@ -103,6 +103,37 @@ const ChatWindow = ({ conversation }) => {
     };
 
 
+    const handleReaction = async (messageId, emoji) => {
+        try {
+            const token = localStorage.getItem("token");
+
+            const response = await axios.put(
+                `http://localhost:5001/api/messages/${messageId}/reaction`,
+                { emoji },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            setMessages((prev) =>
+                prev.map((message) =>
+                    message._id === messageId
+                        ? response.data.message
+                        : message
+                )
+            );
+
+        } catch (error) {
+            console.error(
+                "Reaction Error:",
+                error.response?.data || error.message
+            );
+        }
+    };
+
+
     useEffect(() => {
 
         if (!conversation) return;
@@ -204,6 +235,18 @@ const ChatWindow = ({ conversation }) => {
         socket.on("newMessage", handleNewMessage);
         socket.on("messageDeleted", handleMessageDeleted);
         socket.on("messageEdited", handleMessageEdited);
+        socket.on("messageReaction",handleMessageReaction);
+
+
+        const handleMessageReaction = (updatedMessage) => {
+            setMessages((prev) =>
+                prev.map((message) =>
+                    message._id === updatedMessage._id
+                        ? updatedMessage
+                        : message
+                )
+            );
+        };
 
         const handleTyping = () => {
             setIsTyping(true);
@@ -277,6 +320,7 @@ const ChatWindow = ({ conversation }) => {
             socket.off("messagesRead", handleMessagesRead);
             socket.off("messageDeleted", handleMessageDeleted);
             socket.off("messageEdited", handleMessageEdited);
+            socket.off("messageReaction",handleMessageReaction);
         };
     }, [conversation, otherUserId]);
 
@@ -432,6 +476,50 @@ const ChatWindow = ({ conversation }) => {
                                             <p className="text-xs text-blue-200">
                                                 ✓✓ Seen
                                             </p>
+                                        )}
+
+                                        <div className="flex gap-2 mt-2">
+
+                                            <button
+                                                onClick={() =>
+                                                    handleReaction(message._id, "❤️")
+                                                }
+                                                className="text-sm"
+                                            >
+                                                ❤️
+                                            </button>
+
+                                            <button
+                                                onClick={() =>
+                                                    handleReaction(message._id, "👍")
+                                                }
+                                                className="text-sm"
+                                            >
+                                                👍
+                                            </button>
+
+                                            <button
+                                                onClick={() =>
+                                                    handleReaction(message._id, "😂")
+                                                }
+                                                className="text-sm"
+                                            >
+                                                😂
+                                            </button>
+
+                                        </div>
+
+                                        {message.reactions?.length > 0 && (
+                                            <div className="flex gap-1 mt-2">
+                                                {message.reactions.map((reaction, index) => (
+                                                    <span
+                                                        key={index}
+                                                        className="bg-gray-200 rounded-full px-2 py-1 text-xs"
+                                                    >
+                                                        {reaction.emoji}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
                                 </div>

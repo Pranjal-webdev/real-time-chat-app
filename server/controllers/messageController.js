@@ -327,3 +327,89 @@ export const uploadMessage = async (req, res) => {
         });
     }
 };
+
+
+export const reactToMessage = async (req, res) => {
+    try {
+        const { emoji } = req.body;
+        const { messageId } = req.params;
+
+        if (!emoji) {
+            return res.status(400).json({
+                success: false,
+                message: "Emoji is required",
+            });
+        }
+
+        const message = await Message.findById(messageId);
+
+        if (!message) {
+            return res.status(404).json({
+                success: false,
+                message: "Message not found",
+            });
+        }
+
+        const existingReaction = message.reactions.find(
+            (reaction) =>
+                reaction.user.toString() ===
+                req.user._id.toString()
+        );
+
+        if (existingReaction) {
+            if (existingReaction.emoji === emoji) {
+                message.reactions =
+                    message.reactions.filter(
+                        (reaction) =>
+                            reaction.user.toString() !==
+                            req.user._id.toString()
+                    );
+            } else {
+                existingReaction.emoji = emoji;
+            }
+        } else {
+            message.reactions.push({
+                user: req.user._id,
+                emoji,
+            });
+        }
+
+        await message.save();
+
+        const updatedMessage =
+            await Message.findById(messageId)
+                .populate(
+                    "sender",
+                    "name email profileImage"
+                )
+                .populate(
+                    "reactions.user",
+                    "name"
+                );
+
+        const io = getIO();
+
+        io.to(
+            `conversation:${message.conversation}`
+        ).emit(
+            "messageReaction",
+            updatedMessage
+        );
+
+        res.status(200).json({
+            success: true,
+            message: updatedMessage,
+        });
+
+    } catch (error) {
+        console.error(
+            "React Message Error:",
+            error.message
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};
