@@ -235,7 +235,7 @@ const ChatWindow = ({ conversation }) => {
         socket.on("newMessage", handleNewMessage);
         socket.on("messageDeleted", handleMessageDeleted);
         socket.on("messageEdited", handleMessageEdited);
-        socket.on("messageReaction",handleMessageReaction);
+        socket.on("messageReaction", handleMessageReaction);
 
 
         const handleMessageReaction = (updatedMessage) => {
@@ -320,7 +320,7 @@ const ChatWindow = ({ conversation }) => {
             socket.off("messagesRead", handleMessagesRead);
             socket.off("messageDeleted", handleMessageDeleted);
             socket.off("messageEdited", handleMessageEdited);
-            socket.off("messageReaction",handleMessageReaction);
+            socket.off("messageReaction", handleMessageReaction);
         };
     }, [conversation, otherUserId]);
 
@@ -364,7 +364,20 @@ const ChatWindow = ({ conversation }) => {
                 ) : (
                     <div className="space-y-3">
 
-                        {messages.map((message) => {
+                        {messages.map((message, index) => {
+
+                            const previousMessage =
+                                messages[index - 1];
+
+                            const showDateSeparator =
+                                !previousMessage ||
+                                new Date(
+                                    previousMessage.createdAt
+                                ).toDateString() !==
+                                new Date(
+                                    message.createdAt
+                                ).toDateString();
+
                             const senderId =
                                 message.sender?._id ||
                                 message.sender;
@@ -373,7 +386,50 @@ const ChatWindow = ({ conversation }) => {
                                 senderId?.toString() ===
                                 currentUserId?.toString();
 
+                            const formatMessageDate = (date) => {
+                                const messageDate = new Date(date);
+                                const today = new Date();
+                                const yesterday = new Date();
+
+                                yesterday.setDate(today.getDate() - 1);
+
+                                if (
+                                    messageDate.toDateString() ===
+                                    today.toDateString()
+                                ) {
+                                    return "Today";
+                                }
+
+                                if (
+                                    messageDate.toDateString() ===
+                                    yesterday.toDateString()
+                                ) {
+                                    return "Yesterday";
+                                }
+
+                                return messageDate.toLocaleDateString(
+                                    "en-IN",
+                                    {
+                                        day: "numeric",
+                                        month: "long",
+                                        year: "numeric",
+                                    }
+                                );
+                            };
+
                             return (
+                            <>
+
+                                { showDateSeparator && (
+                                    <div className="flex justify-center my-4">
+                                        <span className="bg-gray-300 text-gray-700 text-xs px-3 py-1 rounded-full">
+                                            {formatMessageDate(
+                                                message.createdAt
+                                            )}
+                                        </span>
+                                    </div>
+                                ),
+
                                 <div
                                     key={message._id}
                                     className={`flex ${isMine
@@ -523,8 +579,8 @@ const ChatWindow = ({ conversation }) => {
                                         )}
                                     </div>
                                 </div>
-                            );
-                        })}
+                            </>
+                        );
 
                     </div>
                 )}
