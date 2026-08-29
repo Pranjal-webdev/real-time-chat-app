@@ -1,5 +1,5 @@
 import express from "express";
-import { sendMessage,getMessages,deleteMessage,editMessage,reactToMessage } from "../controllers/messageController.js";
+import { sendMessage,getMessages,deleteMessage,editMessage,reactToMessage,uploadMessage } from "../controllers/messageController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
 

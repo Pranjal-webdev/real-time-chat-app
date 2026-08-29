@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import socket from "../socket/socket";
 import MessageInput from "./MessageInput";
@@ -10,6 +10,7 @@ const ChatWindow = ({ conversation }) => {
     const [isTyping, setIsTyping] = useState(false);
     const [isOnline, setIsOnline] = useState(false);
     const [replyTo, setReplyTo] = useState(null);
+    const messagesEndRef = useRef(null);
 
     const currentUserId = localStorage.getItem("userId");
 
@@ -134,6 +135,55 @@ const ChatWindow = ({ conversation }) => {
     };
 
 
+    const formatMessageDate = (date) => {
+        const messageDate = new Date(date);
+        const today = new Date();
+        const yesterday = new Date();
+
+        yesterday.setDate(today.getDate() - 1);
+
+        if (
+            messageDate.toDateString() ===
+            today.toDateString()
+        ) {
+            return "Today";
+        }
+
+        if (
+            messageDate.toDateString() ===
+            yesterday.toDateString()
+        ) {
+            return "Yesterday";
+        }
+
+        return messageDate.toLocaleDateString(
+            "en-IN",
+            {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+            }
+        );
+    };
+
+
+    const handleMessageReaction = (updatedMessage) => {
+        setMessages((prev) =>
+            prev.map((message) =>
+                message._id === updatedMessage._id
+                    ? updatedMessage
+                    : message
+            )
+        );
+    };
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({
+            behavior: "smooth",
+        });
+    }, [messages]);
+
+
     useEffect(() => {
 
         if (!conversation) return;
@@ -237,16 +287,6 @@ const ChatWindow = ({ conversation }) => {
         socket.on("messageEdited", handleMessageEdited);
         socket.on("messageReaction", handleMessageReaction);
 
-
-        const handleMessageReaction = (updatedMessage) => {
-            setMessages((prev) =>
-                prev.map((message) =>
-                    message._id === updatedMessage._id
-                        ? updatedMessage
-                        : message
-                )
-            );
-        };
 
         const handleTyping = () => {
             setIsTyping(true);
@@ -386,204 +426,174 @@ const ChatWindow = ({ conversation }) => {
                                 senderId?.toString() ===
                                 currentUserId?.toString();
 
-                            const formatMessageDate = (date) => {
-                                const messageDate = new Date(date);
-                                const today = new Date();
-                                const yesterday = new Date();
-
-                                yesterday.setDate(today.getDate() - 1);
-
-                                if (
-                                    messageDate.toDateString() ===
-                                    today.toDateString()
-                                ) {
-                                    return "Today";
-                                }
-
-                                if (
-                                    messageDate.toDateString() ===
-                                    yesterday.toDateString()
-                                ) {
-                                    return "Yesterday";
-                                }
-
-                                return messageDate.toLocaleDateString(
-                                    "en-IN",
-                                    {
-                                        day: "numeric",
-                                        month: "long",
-                                        year: "numeric",
-                                    }
-                                );
-                            };
 
                             return (
-                            <>
+                                <React.Fragment key={message._id}>
 
-                                { showDateSeparator && (
-                                    <div className="flex justify-center my-4">
-                                        <span className="bg-gray-300 text-gray-700 text-xs px-3 py-1 rounded-full">
-                                            {formatMessageDate(
-                                                message.createdAt
-                                            )}
-                                        </span>
-                                    </div>
-                                ),
+                                    {showDateSeparator && (
+                                        <div className="flex justify-center my-4">
+                                            <span className="bg-gray-300 text-gray-700 text-xs px-3 py-1 rounded-full">
+                                                {formatMessageDate(
+                                                    message.createdAt
+                                                )}
+                                            </span>
+                                        </div>
+                                    )}
 
-                                <div
-                                    key={message._id}
-                                    className={`flex ${isMine
-                                        ? "justify-end"
-                                        : "justify-start"
-                                        }`}
-                                >
                                     <div
-                                        className={`max-w-md px-4 py-3 rounded-2xl ${isMine
-                                            ? "bg-blue-600 text-white rounded-br-none"
-                                            : "bg-white text-gray-800 rounded-bl-none shadow-sm"
+                                        key={message._id}
+                                        className={`flex ${isMine
+                                            ? "justify-end"
+                                            : "justify-start"
                                             }`}
                                     >
-                                        {message.replyTo && (
-                                            <div className="mb-2 p-2 rounded bg-black/10 border-l-2 border-gray-400">
-                                                <p className="text-xs font-semibold">
-                                                    {message.replyTo.sender?.name || "User"}
-                                                </p>
-
-                                                <p className="text-xs opacity-70 truncate">
-                                                    {message.replyTo.text}
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {message.messageType === "image" &&
-                                            message.fileUrl && (
-                                                <img
-                                                    src={`http://localhost:5001${message.fileUrl}`}
-                                                    alt={message.fileName || "Image"}
-                                                    className="max-w-xs rounded-lg"
-                                                />
-                                            )}
-
-                                        {message.messageType === "file" &&
-                                            message.fileUrl && (
-                                                <a
-                                                    href={`http://localhost:5001${message.fileUrl}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="underline"
-                                                >
-                                                    📎 {message.fileName}
-                                                </a>
-                                            )}
-
-                                        {message.messageType === "text" && (
-                                            <p>{message.text}</p>
-                                        )}
-                                        <p>
-                                            {message.text}
-                                        </p>
-
-                                        {message.isEdited && (
-                                            <span className="text-xs opacity-70">
-                                                edited
-                                            </span>
-                                        )}
-
-                                        <p
-                                            className={`text-xs mt-1 ${isMine
-                                                ? "text-blue-100"
-                                                : "text-gray-400"
+                                        <div
+                                            className={`max-w-md px-4 py-3 rounded-2xl ${isMine
+                                                ? "bg-blue-600 text-white rounded-br-none"
+                                                : "bg-white text-gray-800 rounded-bl-none shadow-sm"
                                                 }`}
                                         >
-                                            {new Date(
-                                                message.createdAt
-                                            ).toLocaleTimeString([], {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
-                                        </p>
+                                            {message.replyTo && (
+                                                <div className="mb-2 p-2 rounded bg-black/10 border-l-2 border-gray-400">
+                                                    <p className="text-xs font-semibold">
+                                                        {message.replyTo.sender?.name || "User"}
+                                                    </p>
 
-                                        {isMine && (
-                                            <button
-                                                onClick={() => handleDeleteMessage(message._id)}
-                                                className="text-xs mt-2 underline"
-                                            >
-                                                Delete
-                                            </button>
-                                        )}
+                                                    <p className="text-xs opacity-70 truncate">
+                                                        {message.replyTo.text}
+                                                    </p>
+                                                </div>
+                                            )}
 
-                                        {isMine && (
-                                            <button
-                                                onClick={() => handleEditMessage(message)}
-                                                className="text-xs mt-2 underline"
-                                            >
-                                                Edit
-                                            </button>
-                                        )}
+                                            {message.messageType === "image" &&
+                                                message.fileUrl && (
+                                                    <img
+                                                        src={`http://localhost:5001${message.fileUrl}`}
+                                                        alt={message.fileName || "Image"}
+                                                        className="max-w-xs rounded-lg"
+                                                    />
+                                                )}
 
-                                        <button
-                                            onClick={() => setReplyTo(message)}
-                                            className="text-xs mt-2 underline ml-2"
-                                        >
-                                            Reply
-                                        </button>
-
-                                        {isMine && message.read && (
-                                            <p className="text-xs text-blue-200">
-                                                ✓✓ Seen
-                                            </p>
-                                        )}
-
-                                        <div className="flex gap-2 mt-2">
-
-                                            <button
-                                                onClick={() =>
-                                                    handleReaction(message._id, "❤️")
-                                                }
-                                                className="text-sm"
-                                            >
-                                                ❤️
-                                            </button>
-
-                                            <button
-                                                onClick={() =>
-                                                    handleReaction(message._id, "👍")
-                                                }
-                                                className="text-sm"
-                                            >
-                                                👍
-                                            </button>
-
-                                            <button
-                                                onClick={() =>
-                                                    handleReaction(message._id, "😂")
-                                                }
-                                                className="text-sm"
-                                            >
-                                                😂
-                                            </button>
-
-                                        </div>
-
-                                        {message.reactions?.length > 0 && (
-                                            <div className="flex gap-1 mt-2">
-                                                {message.reactions.map((reaction, index) => (
-                                                    <span
-                                                        key={index}
-                                                        className="bg-gray-200 rounded-full px-2 py-1 text-xs"
+                                            {message.messageType === "file" &&
+                                                message.fileUrl && (
+                                                    <a
+                                                        href={`http://localhost:5001${message.fileUrl}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="underline"
                                                     >
-                                                        {reaction.emoji}
-                                                    </span>
-                                                ))}
+                                                        📎 {message.fileName}
+                                                    </a>
+                                                )}
+
+                                            {message.messageType === "text" && (
+                                                <p>{message.text}</p>
+                                            )}
+
+                                            {message.isEdited && (
+                                                <span className="text-xs opacity-70">
+                                                    edited
+                                                </span>
+                                            )}
+
+                                            <p
+                                                className={`text-xs mt-1 ${isMine
+                                                    ? "text-blue-100"
+                                                    : "text-gray-400"
+                                                    }`}
+                                            >
+                                                {new Date(
+                                                    message.createdAt
+                                                ).toLocaleTimeString([], {
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })}
+                                            </p>
+
+                                            {isMine && (
+                                                <button
+                                                    onClick={() => handleDeleteMessage(message._id)}
+                                                    className="text-xs mt-2 underline"
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+
+                                            {isMine && (
+                                                <button
+                                                    onClick={() => handleEditMessage(message)}
+                                                    className="text-xs mt-2 underline"
+                                                >
+                                                    Edit
+                                                </button>
+                                            )}
+
+                                            <button
+                                                onClick={() => setReplyTo(message)}
+                                                className="text-xs mt-2 underline ml-2"
+                                            >
+                                                Reply
+                                            </button>
+
+                                            {isMine && message.read && (
+                                                <p className="text-xs text-blue-200">
+                                                    ✓✓ Seen
+                                                </p>
+                                            )}
+
+                                            <div className="flex gap-2 mt-2">
+
+                                                <button
+                                                    onClick={() =>
+                                                        handleReaction(message._id, "❤️")
+                                                    }
+                                                    className="text-sm"
+                                                >
+                                                    ❤️
+                                                </button>
+
+                                                <button
+                                                    onClick={() =>
+                                                        handleReaction(message._id, "👍")
+                                                    }
+                                                    className="text-sm"
+                                                >
+                                                    👍
+                                                </button>
+
+                                                <button
+                                                    onClick={() =>
+                                                        handleReaction(message._id, "😂")
+                                                    }
+                                                    className="text-sm"
+                                                >
+                                                    😂
+                                                </button>
+
                                             </div>
-                                        )}
+
+                                            {message.reactions?.length > 0 && (
+                                                <div className="flex gap-1 mt-2">
+                                                    {message.reactions.map((reaction, index) => (
+                                                        <span
+                                                            key={index}
+                                                            className="bg-gray-200 rounded-full px-2 py-1 text-xs"
+                                                        >
+                                                            {reaction.emoji}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </>
-                        );
+                                </React.Fragment>
+                            );
+                        })}
 
                     </div>
                 )}
+
+                <div ref={messagesEndRef} />
 
             </div>
 
