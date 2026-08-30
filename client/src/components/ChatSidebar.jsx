@@ -166,125 +166,248 @@ const ChatSidebar = ({ onSelectConversation }) => {
 
 
     return (
-        <div className="w-80 bg-white border-r border-gray-200 h-full">
+        <div className="w-full md:w-[350px] bg-white border-r border-gray-200 flex flex-col h-full">
 
-            <div className="p-5 border-b">
+            <div className="p-5 border-b bg-white">
 
-                <h2 className="text-xl font-bold">
-                    Chats
-                </h2>
+                <div className="flex items-center justify-between mb-5">
 
-                <input
-                    type="text"
-                    value={search}
-                    onChange={(e) =>
-                        handleSearch(e.target.value)
-                    }
-                    placeholder="Search users..."
-                    className="w-full border rounded-lg px-3 py-2 outline-none"
-                />
-            </div>
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-900">
+                            Chats
+                        </h2>
 
-            {search && (
-                <div className="border-b">
-                    {searching ? (
-                        <p className="p-4 text-gray-500">
-                            Searching...
+                        <p className="text-sm text-gray-400 mt-1">
+                            Your recent conversations
                         </p>
-                    ) : users.length === 0 ? (
-                        <p className="p-4 text-gray-500">
-                            No users found
-                        </p>
-                    ) : (
-                        users.map((user) => (
-                            <button
-                                key={user._id}
-                                onClick={() =>
-                                    handleUserClick(user)
-                                }
-                                className="w-full text-left p-4 hover:bg-gray-100 border-b"
-                            >
-                                <p className="font-semibold">
-                                    {user.name}
-                                </p>
+                    </div>
 
-                                <p className="text-sm text-gray-500">
-                                    {user.email}
-                                </p>
-                            </button>
-                        ))
-                    )}
+                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg">
+                        💬
+                    </div>
+
+                    <div className="relative">
+
+                        <span className="absolute left-3 top-2.5 text-gray-400">
+                            🔍
+                        </span>
+
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) =>
+                                handleSearch(e.target.value)
+                            }
+                            placeholder="Search users..."
+                            className="w-full bg-gray-100 border border-transparent rounded-xl pl-10 pr-4 py-3 text-sm outline-none transition focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        />
+                    </div>
                 </div>
-            )}
 
-            <div>
-                {loading ? (
-                    <p className="p-4 text-gray-500">
-                        Loading chats...
-                    </p>
-                ) : conversations.length === 0 ? (
-                    <p className="p-4 text-gray-500">
-                        No conversations yet
-                    </p>
-                ) : (
-                    conversations.map((conversation) => {
+                {search && (
+                    <div className="border-b max-h-60 overflow-y-auto">
 
-                        const currentUserId =
-                            localStorage.getItem("userId");
+                        {searching ? (
+                            <p className="p-4 text-gray-500">
+                                Searching...
+                            </p>
 
-                        const otherUser =
-                            conversation.participants?.find(
-                                (user) =>
-                                    user._id.toString() !==
-                                    currentUserId?.toString()
+                        ) : users.length === 0 ? (
+                            <p className="p-4 text-gray-500">
+                                No users found
+                            </p>
+
+                        ) : (
+                            users.map((user) => (
+
+                                <button
+                                    key={user._id}
+                                    onClick={() =>
+                                        handleUserClick(user)
+                                    }
+                                    className="w-full flex items-center gap-3 px-4 py-4 border-b border-gray-100 hover:bg-blue-50 transition duration-200"
+                                >
+
+                                    <div className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                                        {user.name
+                                            ?.charAt(0)
+                                            .toUpperCase()}
+                                    </div>
+
+                                    <div className="text-left">
+                                        <p className="font-semibold">
+                                            {user.name}
+                                        </p>
+
+                                        <p className="text-sm text-gray-500">
+                                            {user.email}
+                                        </p>
+                                    </div>
+                                </button>
+                            ))
+                        )}
+                    </div>
+                )}
+
+                <div className="flex-1 overflow-y-auto">
+
+                    {loading ? (
+                        <p className="p-4 text-gray-500">
+                            Loading chats...
+                        </p>
+
+                    ) : conversations.length === 0 ? (
+
+                        <div className="p-8 text-center">
+
+                            <div className="text-4xl mb-3">
+                                💭
+                            </div>
+
+                            <p className="p-4 text-gray-500">
+                                No conversations yet
+                            </p>
+
+                            <p className="text-sm text-gray-400 mt-1">
+                                Search for someone to start chatting
+                            </p>
+
+                        </div>
+
+                    ) : (
+                        conversations.map((conversation) => {
+
+                            const currentUserId =
+                                localStorage.getItem("userId");
+
+                            const otherUser =
+                                conversation.participants?.find(
+                                    (user) =>
+                                        user._id.toString() !==
+                                        currentUserId?.toString()
+                                );
+
+                            return (
+                                <button
+                                    key={conversation._id}
+                                    onClick={() => {
+                                        onSelectConversation(conversation);
+
+                                        setConversations((prev) =>
+                                            prev.map((item) =>
+                                                item._id === conversation._id
+                                                    ? {
+                                                        ...item,
+                                                        unreadCount: 0,
+                                                    }
+                                                    : item
+                                            )
+                                        );
+                                    }}
+                                    className="w-full text-left p-4 border-b hover:bg-gray-100 hover:bg-gray-50 transition"
+                                >
+
+                                    <div className="relative">
+
+                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
+
+                                            {otherUser?.name
+                                                ?.charAt(0)
+                                                .toUpperCase() || "U"}
+
+                                        </div>
+
+                                        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
+
+                                    </div>
+
+                                    <div className="flex-1 min-w-0 text-left">
+
+                                        <div className="flex justify-between items-center">
+
+                                            <p className="font-semibold text-gray-900 truncate">
+
+                                                {otherUser?.name ||
+                                                    "Unknown User"}
+
+                                            </p>
+
+                                            {conversation.lastMessage && (
+                                                <span className="text-[10px] text-gray-400 ml-2">
+                                                    {new Date(
+                                                        conversation.lastMessage.createdAt
+                                                    ).toLocaleTimeString(
+                                                        [],
+                                                        {
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                        }
+                                                    )}
+                                                </span>
+                                            )}
+
+                                        </div>
+
+                                        <div className="flex justify-between items-center">
+
+                                            <p className="text-sm text-gray-500 truncate max-w-[210px]">
+
+                                                {conversation.lastMessage
+                                                    ?.text ||
+                                                    "No messages yet"}
+
+                                            </p>
+
+                                            {conversation.unreadCount > 0 && (
+
+                                                <span className="ml-2 min-w-5 h-5 px-1.5 bg-blue-600 text-white text-xs rounded-full flex items-center justify-center">
+
+                                                    {conversation.unreadCount}
+
+                                                </span>
+
+                                            )}
+
+                                        </div>
+
+                                    </div>
+
+                                </button>
+
                             );
 
-                        return (
-                            <button
-                                key={conversation._id}
-                                onClick={() => {
-                                    onSelectConversation(conversation);
+                        })
 
-                                    setConversations((prev) =>
-                                        prev.map((item) =>
-                                            item._id === conversation._id
-                                                ? {
-                                                    ...item,
-                                                    unreadCount: 0,
-                                                }
-                                                : item
-                                        )
-                                    );
-                                }}
-                                className="w-full text-left p-4 border-b hover:bg-gray-100"
-                            >
+                    )}
 
-                                <p className="font-semibold">
-                                    {otherUser?.name || "Unknown User"}
-                                </p>
+                </div>
+                <div className="p-4 border-t bg-gray-50">
 
-                                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
 
-                                    <p className="text-sm text-gray-500">
-                                        {conversation.lastMessage?.text ||
-                                            "No messages yet"}
-                                    </p>
+                        <div className="w-10 h-10 rounded-full bg-gray-800 text-white flex items-center justify-center font-bold">
+                            U
+                        </div>
 
-                                    {conversation.unreadCount > 0 && (
-                                        <span className="ml-2 bg-blue-600 text-white text-xs rounded-full px-2 py-1">
-                                            {conversation.unreadCount}
-                                        </span>
-                                    )}
+                        <div>
 
-                                </div>
+                            <p className="font-semibold text-sm">
+                                My Account
+                            </p>
 
-                            </button>
-                        );
-                    })
-                )}
+                            <p className="text-xs text-green-600">
+                                ● Online
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
+
         </div>
     );
-};
-
+}
 export default ChatSidebar;

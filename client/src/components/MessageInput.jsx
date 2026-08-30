@@ -96,7 +96,7 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply })
 
         <form
             onSubmit={handleSubmit}
-            className="bg-white border-t p-4 flex gap-3"
+            className="bg-white border-t px-5 py-4 flex gap-3 items-center"
         >
 
             {replyTo && (
@@ -155,12 +155,12 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply })
                     socket.emit("stopTyping", conversationId);
                 }}
                 placeholder="Type a message..."
-                className="flex-1 border rounded-lg px-4 py-3 outline-none"
+                className="flex-1 border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
             />
 
             <button
                 type="submit"
-                className="bg-blue-600 text-white px-6 rounded-lg"
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-7 py-3 rounded-xl font-semibold transition"
             >
                 {sending ? "Sending..." : "Send"}
 

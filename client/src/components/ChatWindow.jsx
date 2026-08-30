@@ -368,8 +368,25 @@ const ChatWindow = ({ conversation }) => {
     if (!conversation) {
 
         return (
-            <div className="flex-1 flex items-center justify-center text-gray-500">
-                Select a conversation to start messaging
+            
+            <div className="flex-1 flex items-center justify-center bg-gray-50">
+
+                <div className="text-center px-6">
+
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-blue-100 flex items-center justify-center text-4xl shadow-sm">
+                        💬
+                    </div>
+
+                    <h1 className="text-3xl font-bold text-gray-800">
+                        Welcome to ChatApp
+                    </h1>
+
+                    <p className="text-gray-500 mt-3">
+                        Select a conversation and start messaging
+                    </p>
+
+                </div>
+
             </div>
         );
     }
@@ -377,9 +394,15 @@ const ChatWindow = ({ conversation }) => {
 
     return (
 
-        <div className="flex-1 flex flex-col bg-gray-100">
+        <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
 
-            <div className="bg-white border-b p-5">
+            <div className="flex items-center gap-3">
+
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
+                    {otherUser?.name
+                        ?.charAt(0)
+                        .toUpperCase() || "U"}
+                </div>
 
                 <h2 className="font-semibold text-lg">
                     {otherUser?.name || "Chat"}
@@ -391,7 +414,7 @@ const ChatWindow = ({ conversation }) => {
 
             </div>
 
-            <div className="flex-1 p-5 overflow-y-auto">
+            <div className="flex-1 px-6 py-5 overflow-y-auto bg-slate-50">
 
                 {loading ? (
                     <p className="text-gray-500 text-center">
@@ -513,7 +536,7 @@ const ChatWindow = ({ conversation }) => {
                                             {isMine && (
                                                 <button
                                                     onClick={() => handleDeleteMessage(message._id)}
-                                                    className="text-xs mt-2 underline"
+                                                    className="w-10 h-10 rounded-full hover:bg-gray-100 text-xl"
                                                 >
                                                     Delete
                                                 </button>
@@ -522,7 +545,7 @@ const ChatWindow = ({ conversation }) => {
                                             {isMine && (
                                                 <button
                                                     onClick={() => handleEditMessage(message)}
-                                                    className="text-xs mt-2 underline"
+                                                    className="w-10 h-10 rounded-full hover:bg-gray-100 text-xl"
                                                 >
                                                     Edit
                                                 </button>
@@ -530,7 +553,7 @@ const ChatWindow = ({ conversation }) => {
 
                                             <button
                                                 onClick={() => setReplyTo(message)}
-                                                className="text-xs mt-2 underline ml-2"
+                                                className="w-10 h-10 rounded-full hover:bg-gray-100 text-xl"
                                             >
                                                 Reply
                                             </button>
