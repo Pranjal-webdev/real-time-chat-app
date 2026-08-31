@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import socket from "../socket/socket";
+import FriendRequests from "./FriendRequests";
 
-const ChatSidebar = ({ onSelectConversation }) => {
+const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
     const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -47,15 +48,13 @@ const ChatSidebar = ({ onSelectConversation }) => {
     };
 
 
-    const handleUserClick = async (user) => {
+    const handleSendRequest = async (userId) => {
         try {
             const token = localStorage.getItem("token");
 
-            const response = await axios.post(
-                "http://localhost:5001/api/conversations",
-                {
-                    userId: user._id,
-                },
+            await axios.post(
+                "http://localhost:5001/api/friend-requests/send",
+                { receiverId: userId },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -63,27 +62,17 @@ const ChatSidebar = ({ onSelectConversation }) => {
                 }
             );
 
-            const conversation = response.data.conversation;
-
-            setConversations((prev) => {
-                const exists = prev.some(
-                    (item) => item._id === conversation._id
-                );
-
-                if (exists) return prev;
-
-                return [conversation, ...prev];
-            });
-
-            onSelectConversation(conversation);
-
-            setSearch("");
-            setUsers([]);
+            alert("Friend request sent");
 
         } catch (error) {
             console.error(
-                "Create Conversation Error:",
+                "Send Request Error:",
                 error.response?.data || error.message
+            );
+
+            alert(
+                error.response?.data?.message ||
+                "Failed to send request"
             );
         }
     };
@@ -202,6 +191,30 @@ const ChatSidebar = ({ onSelectConversation }) => {
                             className="w-full bg-gray-100 border border-transparent rounded-xl pl-10 pr-4 py-3 text-sm outline-none transition focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                         />
                     </div>
+
+                    <FriendRequests
+                        onConversationCreated={(conversation) => {
+
+                            setConversations((prev) => {
+
+                                const alreadyExists = prev.some(
+                                    (item) =>
+                                        item._id === conversation._id
+                                );
+
+                                if (alreadyExists) {
+                                    return prev;
+                                }
+
+                                return [
+                                    conversation,
+                                    ...prev,
+                                ];
+                            });
+
+                            onConversationCreated(conversation);
+                        }}
+                    />
                 </div>
 
                 {search && (
@@ -220,30 +233,31 @@ const ChatSidebar = ({ onSelectConversation }) => {
                         ) : (
                             users.map((user) => (
 
-                                <button
+                                <div
                                     key={user._id}
-                                    onClick={() =>
-                                        handleUserClick(user)
-                                    }
-                                    className="w-full flex items-center gap-3 px-4 py-4 border-b border-gray-100 hover:bg-blue-50 transition duration-200"
+                                    className="w-full flex items-center gap-3 px-4 py-4 border-b border-gray-100 hover:bg-blue-50 transition"
                                 >
-
-                                    <div className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                                        {user.name
-                                            ?.charAt(0)
-                                            .toUpperCase()}
+                                    <div className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
+                                        {user.name?.charAt(0).toUpperCase()}
                                     </div>
 
-                                    <div className="text-left">
-                                        <p className="font-semibold">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-gray-900">
                                             {user.name}
                                         </p>
 
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-sm text-gray-500 truncate">
                                             {user.email}
                                         </p>
                                     </div>
-                                </button>
+
+                                    <button
+                                        onClick={() => handleSendRequest(user._id)}
+                                        className="px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700"
+                                    >
+                                        Add
+                                    </button>
+                                </div>
                             ))
                         )}
                     </div>

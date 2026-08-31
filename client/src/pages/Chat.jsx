@@ -11,11 +11,14 @@ const Chat = () => {
         <div className="h-screen w-full bg-gray-100 flex overflow-hidden">
 
             <ChatSidebar onSelectConversation={setSelectedConversation} />
+            onConversationCreated={(conversation) => {
+                setSelectedConversation(conversation);
+            }}
             {selectedConversation ? (
                 <ChatWindow
                     conversation={selectedConversation}
                 />
-                
+
             ) : (
                 <div className="flex-1 flex items-center justify-center bg-slate-50">
 
@@ -41,4 +44,4 @@ const Chat = () => {
     );
 };
 
- export default Chat;
+export default Chat;
