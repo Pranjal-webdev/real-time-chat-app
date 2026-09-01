@@ -49,12 +49,17 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
 
     const handleSendRequest = async (userId) => {
+
+        console.log("USER ID:", userId);
+        
         try {
             const token = localStorage.getItem("token");
 
             await axios.post(
-                "http://localhost:5001/api/friend-requests/send",
+                "http://localhost:5001/api/friend-requests",
+                
                 { receiverId: userId },
+                
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -103,6 +108,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                     "Fetch Conversations Error:",
                     error.response?.data || error.message
                 );
+                
             } finally {
                 setLoading(false);
             }
