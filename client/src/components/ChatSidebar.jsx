@@ -10,6 +10,37 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
     const [search, setSearch] = useState("");
     const [users, setUsers] = useState([]);
     const [searching, setSearching] = useState(false);
+    const [pendingRequests, setPendingRequests] = useState([]);
+
+    const fetchSentRequests = async () => {
+
+        try {
+            const token = localStorage.getItem("token");
+
+            const response = await axios.get(
+                "http://localhost:5001/api/friend-requests/sent",
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            const ids = (response.data.requests || []).map(
+                (request) =>
+                    request.receiver?._id || request.receiver
+            );
+
+            setPendingRequests(ids);
+
+        } catch (error) {
+            console.error(
+                "Fetch Sent Requests Error:",
+                error.response?.data || error.message
+            );
+        }
+    };
+
 
 
     const handleSearch = async (value) => {
@@ -51,15 +82,15 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
     const handleSendRequest = async (userId) => {
 
         console.log("USER ID:", userId);
-        
+
         try {
             const token = localStorage.getItem("token");
 
             await axios.post(
                 "http://localhost:5001/api/friend-requests",
-                
-                { receiverId: userId },
-                
+
+                { userId: userId },
+
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -67,7 +98,10 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                 }
             );
 
-            alert("Friend request sent");
+            setPendingRequests((prev) => [
+                ...prev,
+                userId,
+            ]);
 
         } catch (error) {
             console.error(
@@ -75,10 +109,18 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                 error.response?.data || error.message
             );
 
-            alert(
-                error.response?.data?.message ||
-                "Failed to send request"
-            );
+            const message = error.response?.data?.message;
+
+            if (message?.includes("already pending")) {
+                setPendingRequests((prev) =>
+                    prev.includes(userId)
+                        ? prev
+                        : [...prev, userId]
+                );
+                return;
+            }
+
+            alert(message || "Failed to send request");
         }
     };
 
@@ -91,6 +133,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                 const token = localStorage.getItem("token");
 
                 const response = await axios.get(
+
                     "http://localhost:5001/api/conversations",
                     {
                         headers: {
@@ -108,13 +151,14 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                     "Fetch Conversations Error:",
                     error.response?.data || error.message
                 );
-                
+
             } finally {
                 setLoading(false);
             }
         };
 
         fetchConversations();
+        fetchSentRequests();
 
         const handleNewMessage = (message) => {
 
@@ -259,9 +303,15 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
                                     <button
                                         onClick={() => handleSendRequest(user._id)}
-                                        className="px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700"
+                                        disabled={pendingRequests.includes(user._id)}
+                                        className={`px-3 py-2 text-xs font-semibold rounded-lg ${pendingRequests.includes(user._id)
+                                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                            : "bg-blue-600 text-white hover:bg-blue-700"
+                                            }`}
                                     >
-                                        Add
+                                        {pendingRequests.includes(user._id)
+                                            ? "Pending"
+                                            : "Add"}
                                     </button>
                                 </div>
                             ))

@@ -3,7 +3,35 @@ import User from "../models/User.js";
 import Conversation from "../models/Conversation.js";
 
 
+export const getSentRequests = async (req, res) => {
+    
+    try {
+        const requests = await FriendRequest.find({
+            sender: req.user._id,
+            status: "pending",
+        }).select("receiver status");
+
+        res.status(200).json({
+            success: true,
+            requests,
+        });
+
+    } catch (error) {
+        console.error(
+            "Get Sent Requests Error:",
+            error.message
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};
+
+
 export const sendFriendRequest = async (req, res) => {
+
     try {
         const { userId } = req.body;
 
