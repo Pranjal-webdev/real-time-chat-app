@@ -11,6 +11,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
     const [users, setUsers] = useState([]);
     const [searching, setSearching] = useState(false);
     const [pendingRequests, setPendingRequests] = useState([]);
+    const [followedUsers, setFollowedUsers] = useState([]);
 
     const fetchSentRequests = async () => {
 
@@ -26,12 +27,35 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                 }
             );
 
-            const ids = (response.data.requests || []).map(
-                (request) =>
-                    request.receiver?._id || request.receiver
-            );
+            const requests = response.data.requests || [];
 
-            setPendingRequests(ids);
+
+            const pendingIds = requests
+                .filter(
+                    (request) =>
+                        request.status === "pending"
+                )
+                .map(
+                    (request) =>
+                        request.receiver?._id ||
+                        request.receiver
+                );
+
+
+            const acceptedIds = requests
+                .filter(
+                    (request) =>
+                        request.status === "accepted"
+                )
+                .map(
+                    (request) =>
+                        request.receiver?._id ||
+                        request.receiver
+                );
+
+            setPendingRequests(pendingIds);
+            setFollowedUsers(acceptedIds);
+
 
         } catch (error) {
             console.error(
@@ -125,6 +149,39 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
     };
 
 
+    const handleFollowedUserClick = (user) => {
+
+        const currentUserId =
+            localStorage.getItem("userId");
+
+        const conversation = conversations.find((conversation) => {
+
+            const hasCurrentUser =
+                conversation.participants?.some(
+                    (participant) =>
+                        participant._id.toString() ===
+                        currentUserId?.toString()
+                );
+
+            const hasClickedUser =
+                conversation.participants?.some(
+                    (participant) =>
+                        participant._id.toString() ===
+                        user._id.toString()
+                );
+
+            return hasCurrentUser && hasClickedUser;
+        });
+
+        if (conversation) {
+            onSelectConversation(conversation);
+
+
+            setSearch("");
+        }
+    };
+
+
     useEffect(() => {
 
         const fetchConversations = async () => {
@@ -196,11 +253,61 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
             );
         };
 
+        const handleFriendRequestAccepted = (conversation) => {
+
+            setConversations((prev) => {
+
+                const alreadyExists = prev.some(
+                    (item) => item._id === conversation._id
+                );
+
+                if (alreadyExists) {
+                    return prev;
+                }
+
+                return [
+                    conversation,
+                    ...prev,
+                ];
+            });
+
+
+            const currentUserId = localStorage.getItem("userId");
+
+            const otherUser = conversation.participants?.find(
+                (user) =>
+                    user._id.toString() !==
+                    currentUserId?.toString()
+            );
+
+            if (otherUser) return;
+
+            setPendingRequests((prev) =>
+                prev.filter(
+                    (id) =>
+                        id.toString() !==
+                        otherUser._id.toString()
+                )
+            );
+
+            setFollowedUsers((prev) =>
+                prev.includes(otherUser._id)
+                    ? prev
+                    : [...prev, otherUser._id]
+            );
+        };
+
+        socket.on("friendRequestAccepted", handleFriendRequestAccepted);
         socket.on("newMessage", handleNewMessage);
 
         return () => {
+
+            socket.off("friendRequestAccepted", handleFriendRequestAccepted);
             socket.off("newMessage", handleNewMessage);
+
         };
+
+
     }, []);
 
 
@@ -292,6 +399,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                     </div>
 
                                     <div className="flex-1 min-w-0">
+
                                         <p className="font-semibold text-gray-900">
                                             {user.name}
                                         </p>
@@ -299,19 +407,43 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                         <p className="text-sm text-gray-500 truncate">
                                             {user.email}
                                         </p>
+
                                     </div>
 
                                     <button
                                         onClick={() => handleSendRequest(user._id)}
-                                        disabled={pendingRequests.includes(user._id)}
-                                        className={`px-3 py-2 text-xs font-semibold rounded-lg ${pendingRequests.includes(user._id)
-                                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                            : "bg-blue-600 text-white hover:bg-blue-700"
+                                        disabled={
+                                            pendingRequests.some(
+                                                (id) => id.toString() === user._id.toString()
+                                            ) ||
+                                            followedUsers.some(
+                                                (id) => id.toString() === user._id.toString()
+                                            )
+                                        }
+                                        className={`px-3 py-2 text-xs font-semibold rounded-lg ${followedUsers.some(
+                                            (id) => id.toString() === user._id.toString()
+                                        )
+                                            ? "bg-green-100 text-green-700 cursor-default"
+                                            : pendingRequests.some(
+                                                (id) =>
+                                                    id.toString() ===
+                                                    user._id.toString()
+                                            )
+                                                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                                : "bg-blue-600 text-white hover:bg-blue-700"
                                             }`}
                                     >
-                                        {pendingRequests.includes(user._id)
-                                            ? "Pending"
-                                            : "Add"}
+                                        {followedUsers.some(
+                                            (id) => id.toString() === user._id.toString()
+                                        )
+                                            ? "Followed"
+                                            : pendingRequests.some(
+                                                (id) =>
+                                                    id.toString() ===
+                                                    user._id.toString()
+                                            )
+                                                ? "Pending"
+                                                : "Add"}
                                     </button>
                                 </div>
                             ))
@@ -358,6 +490,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                 );
 
                             return (
+                                
                                 <button
                                     key={conversation._id}
                                     onClick={() => {
@@ -451,6 +584,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                     )}
 
                 </div>
+
                 <div className="p-4 border-t bg-gray-50">
 
                     <div className="flex items-center gap-3">

@@ -23,11 +23,13 @@ const FriendRequests = ({ onConversationCreated }) => {
             setRequests(
                 response.data.requests || []
             );
+
         } catch (error) {
             console.error(
                 "Fetch Requests Error:",
                 error.response?.data || error.message
             );
+
         } finally {
             setLoading(false);
         }
@@ -40,6 +42,11 @@ const FriendRequests = ({ onConversationCreated }) => {
     const handleAccept = async (requestId) => {
 
         try {
+
+            setProcessingId(requestId);
+
+            const token = localStorage.getItem("token");
+
             const response = await axios.post(
                 `http://localhost:5001/api/friend-requests/${requestId}/accept`,
                 {},
@@ -50,10 +57,7 @@ const FriendRequests = ({ onConversationCreated }) => {
                 }
             );
 
-            console.log(
-                "Friend Request Accepted:",
-                response.data
-            );
+            console.log("Accepted:",response.data);
 
             setRequests((prev) =>
                 prev.filter(
@@ -64,7 +68,7 @@ const FriendRequests = ({ onConversationCreated }) => {
 
             if (response.data.conversation) {
                 onConversationCreated(
-                    conversation
+                    response.data.conversation
                 );
             }
 
@@ -208,7 +212,7 @@ const FriendRequests = ({ onConversationCreated }) => {
             </div>
 
         </div>
-    );   
+    );
 };
 
 export default FriendRequests;

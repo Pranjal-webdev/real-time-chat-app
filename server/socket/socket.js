@@ -9,7 +9,7 @@ export const initializeSocket = (server) => {
         cors: {
             origin: [
             "http://localhost:5173",
-            "http://localhost:5174",
+            "http://localhost:5174"
         ],
             credentials: true,
         },
@@ -72,6 +72,8 @@ export const initializeSocket = (server) => {
 
         socket.on("userOnline", (userId) => {
             onlineUsers.set(userId.toString(), socket.id);
+
+            socket.join(userId.toString());
 
             socket.broadcast.emit("userOnline", {
                 userId,

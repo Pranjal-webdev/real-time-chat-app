@@ -1,15 +1,16 @@
 import FriendRequest from "../models/FriendRequest.js";
 import User from "../models/User.js";
 import Conversation from "../models/Conversation.js";
+import { getIO } from "../socket/socket.js";
 
 
 export const getSentRequests = async (req, res) => {
-    
+
     try {
         const requests = await FriendRequest.find({
-            sender: req.user._id,
-            status: "pending",
-        }).select("receiver status");
+            sender: req.user._id
+        }).select("receiver status")
+            .populate("receiver", "name email profileImage");;
 
         res.status(200).json({
             success: true,
@@ -139,6 +140,7 @@ export const getReceivedRequests = async (req, res) => {
 
 
 export const acceptFriendRequest = async (req, res) => {
+
     try {
         const { requestId } = req.params;
 
@@ -157,6 +159,8 @@ export const acceptFriendRequest = async (req, res) => {
 
         request.status = "accepted";
         await request.save();
+
+        const senderId = request.sender.toString();
 
         let conversation = await Conversation.findOne({
             participants: {
@@ -181,6 +185,13 @@ export const acceptFriendRequest = async (req, res) => {
         ).populate(
             "participants",
             "name email profileImage"
+        );
+
+        const io = getIO();
+
+        io.to(request.sender.toString()).emit(
+            "friendRequestAccepted",
+            conversation
         );
 
         res.status(200).json({
