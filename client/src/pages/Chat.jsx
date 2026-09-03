@@ -10,10 +10,12 @@ const Chat = () => {
 
         <div className="h-screen w-full bg-gray-100 flex overflow-hidden">
 
-            <ChatSidebar onSelectConversation={setSelectedConversation} />
-            onConversationCreated={(conversation) => {
-                setSelectedConversation(conversation);
-            }}
+            <ChatSidebar onSelectConversation={setSelectedConversation}
+                onConversationCreated={(conversation) => {
+                    setSelectedConversation(conversation);
+                }}
+            />
+            
             {selectedConversation ? (
                 <ChatWindow
                     conversation={selectedConversation}
