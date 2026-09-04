@@ -292,7 +292,7 @@ const ChatWindow = ({ conversation }) => {
             setIsTyping(true);
         };
 
-        const handleUserOnline = () => {
+        const handleUserOnline = ({ userId }) => {
             if (
                 userId?.toString() ===
                 otherUserId?.toString()
@@ -301,7 +301,7 @@ const ChatWindow = ({ conversation }) => {
             }
         };
 
-        const handleUserOffline = () => {
+        const handleUserOffline = ({ userId }) => {
             if (
                 userId?.toString() ===
                 otherUserId?.toString()
@@ -394,7 +394,7 @@ const ChatWindow = ({ conversation }) => {
 
     return (
 
-        <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
+        <div className="flex-1 flex flex-col h-full min-w-0 bg-white">
 
             <div className="flex items-center gap-3">
 
