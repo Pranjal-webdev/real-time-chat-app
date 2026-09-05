@@ -148,40 +148,95 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
         }
     };
 
+    const handleFollowedUserClick = async (user) => {
 
-    const handleFollowedUserClick = (user) => {
+        const currentUserId = localStorage.getItem("userId");
 
-        const conversation = conversations.find((conversation) => {
+        console.log("CLICKED USER:", user._id, user.name);
+        console.log("CURRENT USER:", currentUserId);
 
+        let conversation = conversations.find((conversation) => {
             const participants = conversation.participants || [];
 
-            return participants.some((participant) => {
+            const hasCurrentUser = participants.some((participant) => {
                 const participantId = participant?._id || participant;
-                return participantId.toString() === user._id.toString();
+
+                return (
+                    participantId?.toString() ===
+                    currentUserId?.toString()
+                );
             });
+
+            const hasClickedUser = participants.some((participant) => {
+                const participantId = participant?._id || participant;
+
+                return (
+                    participantId?.toString() ===
+                    user._id?.toString()
+                );
+            });
+
+            return hasCurrentUser && hasClickedUser;
         });
-
-        console.log("FOLLOWED CLICKED:", user._id, user);
-
-        console.log(
-            "CONVERSATION PARTICIPANTS:",
-            conversation?.participants?.map((p) => ({
-                id: p?._id,
-                name: p?.name,
-            }))
-        );
 
         console.log("FOUND CONVERSATION:", conversation);
 
+
         if (!conversation) {
-            console.log("Conversation not found:", user._id);
-            console.log("Conversations:", conversations);
-            return;
+            try {
+                const token = localStorage.getItem("token");
+
+                const response = await axios.post(
+                    "http://localhost:5001/api/conversations",
+                    {
+                        userId: user._id,
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                conversation = response.data.conversation;
+
+                console.log(
+                    "NEW CONVERSATION CREATED:",
+                    conversation
+                );
+
+                // Add only if it doesn't already exist
+                setConversations((prev) => {
+                    const exists = prev.some(
+                        (item) =>
+                            item._id?.toString() ===
+                            conversation._id?.toString()
+                    );
+
+                    if (exists) {
+                        return prev;
+                    }
+
+                    return [conversation, ...prev];
+                });
+
+            } catch (error) {
+                console.error(
+                    "Create Conversation Error:",
+                    error.response?.data || error.message
+                );
+
+                return;
+            }
         }
 
-        console.log("Opening conversation:", conversation);
+        console.log(
+            "OPENING CONVERSATION:",
+            conversation
+        );
 
         onSelectConversation(conversation);
+
         setSearch("");
         setUsers([]);
     };
@@ -417,38 +472,50 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                     <button
                                         onClick={() => {
                                             const isFollowed = followedUsers.some(
-                                                id => id.toString() === user._id.toString()
+                                                (id) =>
+                                                    id?.toString() ===
+                                                    user?._id?.toString()
+                                            );
+
+                                            const isPending = pendingRequests.some(
+                                                (id) =>
+                                                    id?.toString() ===
+                                                    user?._id?.toString()
                                             );
 
                                             if (isFollowed) {
                                                 handleFollowedUserClick(user);
-                                            } else if (
-                                                pendingRequests.some(
-                                                    id => id.toString() === user._id.toString()
-                                                )
-                                            ) {
+                                            } else if (isPending) {
                                                 return;
                                             } else {
                                                 handleSendRequest(user._id);
                                             }
                                         }}
                                         className={`px-3 py-2 text-xs font-semibold rounded-lg ${followedUsers.some(
-                                            id => id.toString() === user._id.toString()
+                                            (id) =>
+                                                id?.toString() ===
+                                                user?._id?.toString()
                                         )
-                                            ? "bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer"
-                                            : pendingRequests.some(
-                                                id => id.toString() === user._id.toString()
-                                            )
-                                                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                                : "bg-blue-600 text-white hover:bg-blue-700"
+                                                ? "bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer"
+                                                : pendingRequests.some(
+                                                    (id) =>
+                                                        id?.toString() ===
+                                                        user?._id?.toString()
+                                                )
+                                                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                                    : "bg-blue-600 text-white hover:bg-blue-700"
                                             }`}
                                     >
                                         {followedUsers.some(
-                                            id => id.toString() === user._id.toString()
+                                            (id) =>
+                                                id?.toString() ===
+                                                user?._id?.toString()
                                         )
                                             ? "Followed"
                                             : pendingRequests.some(
-                                                id => id.toString() === user._id.toString()
+                                                (id) =>
+                                                    id?.toString() ===
+                                                    user?._id?.toString()
                                             )
                                                 ? "Pending"
                                                 : "Add"}
@@ -491,12 +558,14 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                 localStorage.getItem("userId");
 
                             const otherUser =
-                                conversation.participants?.find(
-                                    (user) =>
-                                        user._id.toString() !==
-                                        currentUserId?.toString()
-                                );
+                                conversation.participants?.find((user) => {
+                                    const userId = user?._id || user;
 
+                                    return (
+                                        userId?.toString() !==
+                                        currentUserId?.toString()
+                                    );
+                                });
                             return (
 
                                 <button

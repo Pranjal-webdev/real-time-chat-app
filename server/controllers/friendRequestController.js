@@ -160,7 +160,11 @@ export const acceptFriendRequest = async (req, res) => {
         request.status = "accepted";
         await request.save();
 
-        const senderId = request.sender.toString();
+        console.log("ACCEPT REQUEST:");
+        console.log("Sender:", request.sender.toString());
+        console.log("Receiver:", request.receiver.toString());
+        console.log("Logged in user:", req.user._id.toString());
+
 
         let conversation = await Conversation.findOne({
             participants: {

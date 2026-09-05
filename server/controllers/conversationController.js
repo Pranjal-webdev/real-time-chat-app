@@ -5,7 +5,10 @@ import Message from "../models/Message.js";
 export const createConversation = async (req, res) => {
 
     try {
+        
         const { userId } = req.body;
+        console.log("BACKEND CURRENT USER:", req.user._id.toString());
+        console.log("FRONTEND REQUESTED USER:", userId);
 
         if (!userId) {
             return res.status(400).json({
@@ -30,30 +33,55 @@ export const createConversation = async (req, res) => {
             });
         }
 
+
         let conversation = await Conversation.findOne({
             participants: {
                 $all: [req.user._id, userId],
             },
         });
 
+
         if (conversation) {
+            conversation = await Conversation.findById(
+                conversation._id
+            ).populate(
+                "participants",
+                "name email profileImage"
+            );
+
             return res.status(200).json({
                 success: true,
                 conversation,
             });
         }
 
+
         conversation = await Conversation.create({
-            participants: [req.user._id, userId],
+            participants: [
+                req.user._id,
+                userId,
+            ],
         });
+
+
+        conversation = await Conversation.findById(
+            conversation._id
+        ).populate(
+            "participants",
+            "name email profileImage"
+        );
 
         res.status(201).json({
             success: true,
             message: "Conversation created",
             conversation,
         });
+
     } catch (error) {
-        console.error("Create Conversation Error:", error.message);
+        console.error(
+            "Create Conversation Error:",
+            error.message
+        );
 
         res.status(500).json({
             success: false,
