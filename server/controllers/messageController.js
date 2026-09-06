@@ -6,6 +6,7 @@ export const sendMessage = async (req, res) => {
 
     try {
         const { conversationId, text, replyTo } = req.body;
+        const isImage = req.body.isImage === true || req.body.isImage === "true";
 
         if (!conversationId || !text?.trim()) {
             return res.status(400).json({
@@ -34,15 +35,16 @@ export const sendMessage = async (req, res) => {
                 message: "You are not a participant of this conversation",
             });
         }
-
+        
         const message = await Message.create({
             conversation: conversationId,
             sender: req.user._id,
             text: text.trim(),
+            isImage,
             replyTo: replyTo || null,
             messageType: isImage ? "image" : "file",
-            fileUrl: `/uploads/${req.file.filename}`,
-            fileName: req.file.originalname
+            fileUrl: null,
+            fileName: null
         });
 
         await Conversation.findByIdAndUpdate(
@@ -70,10 +72,7 @@ export const sendMessage = async (req, res) => {
                 },
             });
 
-        getIO()
-            .to(`conversation:${conversationId}`)
-            .emit("newMessage", populatedMessage);
-
+        
         const io = getIO();
 
         io.to(`conversation:${conversationId}`).emit(
@@ -88,11 +87,11 @@ export const sendMessage = async (req, res) => {
 
     } catch (error) {
 
-        console.error("Send Message Error:", error.message);
+        console.error("Send Message Error:", error);
 
         res.status(500).json({
             success: false,
-            message: "Server error"
+            message: error.message
         });
     }
 };
@@ -292,8 +291,8 @@ export const uploadMessage = async (req, res) => {
             sender: req.user._id,
             text: "",
             messageType: isImage ? "image" : "file",
-            fileUrl: `/uploads/${req.file.filename}`,
-            fileName: req.file.originalname,
+            fileUrl: null,
+            fileName: null,
         });
 
         const populatedMessage =

@@ -90,9 +90,17 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                 }
             );
 
-            setUsers(response.data.users || []);
+            const currentUserId = localStorage.getItem("userId");
+
+            const filteredUsers = (response.data.users || []).filter(
+                (user) =>
+                    user._id?.toString() !== currentUserId?.toString()
+            );
+
+            setUsers(filteredUsers);
 
         } catch (error) {
+            
             console.error(
                 "Search Users Error:",
                 error.response?.data || error.message
@@ -205,7 +213,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                     conversation
                 );
 
-                // Add only if it doesn't already exist
+
                 setConversations((prev) => {
                     const exists = prev.some(
                         (item) =>
@@ -496,14 +504,14 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                                 id?.toString() ===
                                                 user?._id?.toString()
                                         )
-                                                ? "bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer"
-                                                : pendingRequests.some(
-                                                    (id) =>
-                                                        id?.toString() ===
-                                                        user?._id?.toString()
-                                                )
-                                                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                                    : "bg-blue-600 text-white hover:bg-blue-700"
+                                            ? "bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer"
+                                            : pendingRequests.some(
+                                                (id) =>
+                                                    id?.toString() ===
+                                                    user?._id?.toString()
+                                            )
+                                                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                                : "bg-blue-600 text-white hover:bg-blue-700"
                                             }`}
                                     >
                                         {followedUsers.some(

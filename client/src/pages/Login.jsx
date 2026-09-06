@@ -15,6 +15,10 @@ const Login = ({ onRegister, onLoginSuccess }) => {
         setLoading(true);
 
         try {
+
+            localStorage.removeItem("token");
+            localStorage.removeItem("userId");
+
             const response = await axios.post(
                 "http://localhost:5001/api/auth/login",
                 {

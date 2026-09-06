@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 
 export const searchUsers = async (req, res) => {
+    
     try {
         const { search } = req.query;
 
@@ -12,7 +13,7 @@ export const searchUsers = async (req, res) => {
         }
 
         const users = await User.find({
-            _id: { $ne: req.user._id },
+    
             $or: [
                 {
                     name: {

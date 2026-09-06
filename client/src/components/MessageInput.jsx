@@ -82,11 +82,10 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply })
             setMessage("");
 
         } catch (error) {
-            console.error(
-                "Send Message Error:",
-                error.response?.data || error.message
-            );
-
+            console.log("STATUS:", error.response?.status);
+            console.log("DATA:", error.response?.data);
+            console.log("ERROR:", error.message);
+            
         } finally {
             setSending(false);
         }
@@ -138,7 +137,7 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply })
             >
                 {uploading ? "Uploading..." : "📎"}
             </button>
-            
+
             <input
                 type="text"
                 value={message}
