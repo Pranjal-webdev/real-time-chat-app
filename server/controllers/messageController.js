@@ -42,7 +42,7 @@ export const sendMessage = async (req, res) => {
             text: text.trim(),
             isImage,
             replyTo: replyTo || null,
-            messageType: isImage ? "image" : "file",
+            messageType: isImage ? "image" : "text",
             fileUrl: null,
             fileName: null
         });

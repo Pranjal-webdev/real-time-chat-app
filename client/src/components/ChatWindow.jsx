@@ -466,14 +466,14 @@ const ChatWindow = ({ conversation }) => {
                                     <div
                                         key={message._id}
                                         className={`flex ${isMine
-                                            ? "justify-end"
-                                            : "justify-start"
+                                            ? "justify-start"
+                                            : "justify-end"
                                             }`}
                                     >
                                         <div
                                             className={`max-w-md px-4 py-3 rounded-2xl ${isMine
-                                                ? "bg-blue-600 text-white rounded-br-none"
-                                                : "bg-white text-gray-800 rounded-bl-none shadow-sm"
+                                                ? "bg-blue-600 text-white rounded-bl-none"
+                                                : "bg-white text-gray-800 rounded-rl-none shadow-sm"
                                                 }`}
                                         >
                                             {message.replyTo && (
@@ -536,7 +536,7 @@ const ChatWindow = ({ conversation }) => {
                                             {isMine && (
                                                 <button
                                                     onClick={() => handleDeleteMessage(message._id)}
-                                                    className="w-10 h-10 rounded-full hover:bg-gray-100 text-xl"
+                                                    className="text-xs px-2 py-1 cursor-pointer text-xl"
                                                 >
                                                     Delete
                                                 </button>
@@ -545,7 +545,7 @@ const ChatWindow = ({ conversation }) => {
                                             {isMine && (
                                                 <button
                                                     onClick={() => handleEditMessage(message)}
-                                                    className="w-10 h-10 rounded-full hover:bg-gray-100 text-xl"
+                                                    className="text-xs px-2 py-1 cursor-pointer text-xl"
                                                 >
                                                     Edit
                                                 </button>
@@ -553,7 +553,7 @@ const ChatWindow = ({ conversation }) => {
 
                                             <button
                                                 onClick={() => setReplyTo(message)}
-                                                className="w-10 h-10 rounded-full hover:bg-gray-100 text-xl"
+                                                className="text-xs px-2 py-1 cursor-pointer text-xl"
                                             >
                                                 Reply
                                             </button>
