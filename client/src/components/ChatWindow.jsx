@@ -341,7 +341,10 @@ const ChatWindow = ({ conversation }) => {
 
         if (socket.connected) {
 
-            socket.emit("joinConversation", conversation._id);
+            socket.emit("joinConversation", {
+                conversationId: conversation._id,
+                userId: currentUserId,
+            });
 
             socket.emit("markMessagesRead", {
                 conversationId: conversation._id,
@@ -368,7 +371,7 @@ const ChatWindow = ({ conversation }) => {
     if (!conversation) {
 
         return (
-            
+
             <div className="flex-1 flex items-center justify-center bg-gray-50">
 
                 <div className="text-center px-6">
@@ -449,6 +452,17 @@ const ChatWindow = ({ conversation }) => {
                                 senderId?.toString() ===
                                 currentUserId?.toString();
 
+                            console.log(
+                                "MESSAGE:",
+                                message.text,
+                                "SENDER:",
+                                senderId?.toString(),
+                                "CURRENT:",
+                                currentUserId?.toString(),
+                                "MINE:",
+                                isMine
+                            );
+
 
                             return (
                                 <React.Fragment key={message._id}>
@@ -466,8 +480,8 @@ const ChatWindow = ({ conversation }) => {
                                     <div
                                         key={message._id}
                                         className={`flex ${isMine
-                                            ? "justify-start"
-                                            : "justify-end"
+                                            ? "justify-end"
+                                            : "justify-start"
                                             }`}
                                     >
                                         <div

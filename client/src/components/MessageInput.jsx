@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import socket from "../socket/socket";
-import { useRef } from "react";
 
 const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply }) => {
 
@@ -9,6 +8,7 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply })
     const [sending, setSending] = useState(false);
     const fileInputRef = useRef(null);
     const [uploading, setUploading] = useState(false);
+    const typingTimeoutRef = useRef(null);
 
 
     const handleFileChange = async (e) => {
@@ -85,11 +85,18 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply })
             console.log("STATUS:", error.response?.status);
             console.log("DATA:", error.response?.data);
             console.log("ERROR:", error.message);
-            
+
         } finally {
             setSending(false);
         }
     };
+
+    useEffect(() => {
+        return () => {
+            clearTimeout(typingTimeoutRef.current);
+            socket.emit("stopTyping", conversationId);
+        };
+    }, [conversationId]);
 
     return (
 
@@ -142,16 +149,22 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply })
                 type="text"
                 value={message}
                 onChange={(e) => {
-                    setMessage(e.target.value);
+                    const value = e.target.value;
 
-                    if (e.target.value.trim()) {
+                    setMessage(value);
+
+                    if (value.trim()) {
                         socket.emit("typing", conversationId);
+
+                        clearTimeout(typingTimeoutRef.current);
+
+                        typingTimeoutRef.current = setTimeout(() => {
+                            socket.emit("stopTyping", conversationId);
+                        }, 1000);
                     } else {
+                        clearTimeout(typingTimeoutRef.current);
                         socket.emit("stopTyping", conversationId);
                     }
-                }}
-                onBlur={() => {
-                    socket.emit("stopTyping", conversationId);
                 }}
                 placeholder="Type a message..."
                 className="flex-1 border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"

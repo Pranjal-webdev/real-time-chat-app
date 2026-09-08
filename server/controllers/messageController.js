@@ -291,9 +291,18 @@ export const uploadMessage = async (req, res) => {
             sender: req.user._id,
             text: "",
             messageType: isImage ? "image" : "file",
-            fileUrl: null,
-            fileName: null,
+            fileUrl: `/uploads/${req.file.filename}`,
+            fileName: req.file.originalname,
         });
+
+         await Conversation.findByIdAndUpdate(
+            conversationId,
+            {
+                lastMessage: message._id,
+                lastMessageAt: message.createdAt,
+            }
+        );
+
 
         const populatedMessage =
             await Message.findById(message._id)

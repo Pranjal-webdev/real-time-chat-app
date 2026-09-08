@@ -10,7 +10,6 @@ const Chat = () => {
     return (
         <div className="h-screen w-full bg-gray-100 flex overflow-hidden">
 
-            {/* Sidebar */}
             <div
                 className={`${
                     selectedConversation ? "hidden md:block" : "block"
@@ -24,7 +23,6 @@ const Chat = () => {
                 />
             </div>
 
-            {/* Chat Window */}
             <div
                 className={`${
                     selectedConversation ? "flex" : "hidden md:flex"

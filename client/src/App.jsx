@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import socket from "./socket/socket";
 
 import Chat from "./pages/Chat";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import FriendRequestsPage from "./components/FriendRequestsPage";
 
 function App() {
 
@@ -46,7 +48,7 @@ function App() {
 
     }, [isAuthenticated]);
 
-    
+
     if (!isAuthenticated) {
 
         if (showRegister) {
@@ -66,7 +68,31 @@ function App() {
         );
     }
 
-    return <Chat />;
+
+    return (
+        <BrowserRouter>
+
+            <Routes>
+
+                <Route
+                    path="/chat"
+                    element={<Chat />}
+                />
+
+                <Route
+                    path="/friend-requests"
+                    element={<FriendRequestsPage />}
+                />
+
+                <Route
+                    path="*"
+                    element={<Navigate to="/chat" />}
+                />
+
+            </Routes>
+
+        </BrowserRouter>
+    );
 }
 
 export default App;

@@ -8,9 +8,9 @@ export const initializeSocket = (server) => {
     io = new Server(server, {
         cors: {
             origin: [
-            "http://localhost:5173",
-            "http://localhost:5174"
-        ],
+                "http://localhost:5173",
+                "http://localhost:5174"
+            ],
             credentials: true,
         },
     });
@@ -18,14 +18,14 @@ export const initializeSocket = (server) => {
     io.on("connection", (socket) => {
         console.log("User connected:", socket.id);
 
-        socket.on("joinConversation", (conversationId) => {
+        socket.on("joinConversation", ({ conversationId, userId }) => {
             socket.join(`conversation:${conversationId}`);
 
-            socket.to(`conversation:${conversationId}`).emit("userOnline");
+            socket.to(`conversation:${conversationId}`).emit("userOnline", {
+                userId,
+            });
 
-            console.log(
-                `${socket.id} joined conversation:${conversationId}`
-            );
+            console.log(`${socket.id} joined conversation:${conversationId}`);
         });
 
         socket.on("markMessagesRead", ({ conversationId, userId }) => {
