@@ -19,13 +19,29 @@ export const initializeSocket = (server) => {
         console.log("User connected:", socket.id);
 
         socket.on("joinConversation", ({ conversationId, userId }) => {
+
             socket.join(`conversation:${conversationId}`);
 
-            socket.to(`conversation:${conversationId}`).emit("userOnline", {
+            onlineUsers.set(
+                userId.toString(),
+                socket.id
+            );
+
+            socket.join(userId.toString());
+
+            socket.emit("onlineUsers", {
+                userIds: [...onlineUsers.keys()],
+            });
+
+            socket.to(
+                `conversation:${conversationId}`
+            ).emit("userOnline", {
                 userId,
             });
 
-            console.log(`${socket.id} joined conversation:${conversationId}`);
+            console.log(
+                `${socket.id} joined conversation:${conversationId}`
+            );
         });
 
         socket.on("markMessagesRead", ({ conversationId, userId }) => {
@@ -35,13 +51,6 @@ export const initializeSocket = (server) => {
                     conversationId,
                     userId,
                 });
-        });
-
-        socket.on("deleteMessage", ({ conversationId, messageId }) => {
-            io.to(`conversation:${conversationId}`).emit(
-                "messageDeleted",
-                { messageId }
-            );
         });
 
         socket.on("editMessage", ({ conversationId, message }) => {
@@ -71,13 +80,45 @@ export const initializeSocket = (server) => {
         });
 
         socket.on("userOnline", (userId) => {
-            onlineUsers.set(userId.toString(), socket.id);
+
+            onlineUsers.set(
+                userId.toString(),
+                socket.id
+            );
 
             socket.join(userId.toString());
 
             socket.broadcast.emit("userOnline", {
                 userId,
             });
+
+            console.log(
+                "ONLINE USER:",
+                userId.toString()
+            );
+        });
+
+        socket.on("checkUserOnline", (userId) => {
+
+            const isOnline = onlineUsers.has(
+                userId.toString()
+            );
+
+            console.log(
+                "CHECK USER:",
+                userId.toString(),
+                "ONLINE:",
+                isOnline
+            );
+
+            socket.emit(
+                isOnline
+                    ? "userOnline"
+                    : "userOffline",
+                {
+                    userId,
+                }
+            );
         });
 
         socket.on("disconnect", () => {

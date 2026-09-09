@@ -185,187 +185,193 @@ const ChatWindow = ({ conversation }) => {
 
 
     useEffect(() => {
+    if (!conversation || !otherUserId) return;
 
-        if (!conversation) return;
+    setIsOnline(false);
 
-        const fetchMessages = async () => {
+    const fetchMessages = async () => {
+        try {
+            setLoading(true);
 
-            try {
-                setLoading(true);
+            const token = localStorage.getItem("token");
 
-                const token = localStorage.getItem("token");
-
-                const response = await axios.get(
-                    `http://localhost:5001/api/messages/${conversation._id}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-
-                setMessages(response.data.messages || []);
-
-            } catch (error) {
-
-                console.error(
-                    "Fetch Messages Error:",
-                    error.response?.data || error.message
-                );
-
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchMessages();
-
-        if (!socket.connected) {
-
-            socket.connect();
-        }
-
-        const handleConnect = () => {
-
-            console.log("Socket connected:", socket.id);
-
-            socket.emit("joinConversation", conversation._id);
-
-            socket.emit("markMessagesRead", {
-                conversationId: conversation._id,
-                userId: currentUserId,
-            });
-        };
-
-        const handleNewMessage = (message) => {
-
-            console.log("New message received:", message);
-
-            const messageConversationId =
-                message.conversation?._id ||
-                message.conversation;
-
-            if (
-                messageConversationId?.toString() ===
-                conversation._id.toString()
-            ) {
-                const senderId = message.sender?._id || message.sender;
-
-                if (
-                    senderId?.toString() ===
-                    currentUserId?.toString()
-                ) {
-                    return;
+            const response = await axios.get(
+                `http://localhost:5001/api/messages/${conversation._id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 }
-
-                setMessages((prev) => [
-                    ...prev,
-                    message,
-                ]);
-            }
-        };
-
-        const handleMessageDeleted = ({ messageId }) => {
-            setMessages((prev) =>
-                prev.filter((message) => message._id !== messageId)
             );
-        };
 
-        const handleMessageEdited = (updatedMessage) => {
-            setMessages((prev) =>
-                prev.map((message) =>
-                    message._id === updatedMessage._id
-                        ? updatedMessage
-                        : message
-                )
+            setMessages(response.data.messages || []);
+
+        } catch (error) {
+            console.error(
+                "Fetch Messages Error:",
+                error.response?.data || error.message
             );
-        };
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        socket.on("connect", handleConnect);
-        socket.on("newMessage", handleNewMessage);
-        socket.on("messageDeleted", handleMessageDeleted);
-        socket.on("messageEdited", handleMessageEdited);
-        socket.on("messageReaction", handleMessageReaction);
+    fetchMessages();
 
+    const handleConnect = () => {
+        console.log("Socket connected:", socket.id);
 
-        const handleTyping = () => {
-            setIsTyping(true);
-        };
+        socket.emit("joinConversation", {
+            conversationId: conversation._id,
+            userId: currentUserId,
+        });
 
-        const handleUserOnline = ({ userId }) => {
-            if (
-                userId?.toString() ===
+        socket.emit("markMessagesRead", {
+            conversationId: conversation._id,
+            userId: currentUserId,
+        });
+
+        // Check other user's current status
+        socket.emit("checkUserOnline", otherUserId);
+    };
+
+    const handleUserOnline = ({ userId }) => {
+        if (
+            userId?.toString() ===
+            otherUserId?.toString()
+        ) {
+            setIsOnline(true);
+        }
+    };
+
+    const handleUserOffline = ({ userId }) => {
+        if (
+            userId?.toString() ===
+            otherUserId?.toString()
+        ) {
+            setIsOnline(false);
+        }
+    };
+
+    const handleOnlineUsers = ({ userIds }) => {
+        const online = userIds?.some(
+            (id) =>
+                id?.toString() ===
                 otherUserId?.toString()
-            ) {
-                setIsOnline(true);
-            }
-        };
+        );
 
-        const handleUserOffline = ({ userId }) => {
-            if (
-                userId?.toString() ===
-                otherUserId?.toString()
-            ) {
-                setIsOnline(false);
-            }
-        };
+        setIsOnline(online);
+    };
 
-        const handleMessagesRead = ({ conversationId }) => {
-            if (
-                conversationId.toString() !==
-                conversation._id.toString()
-            ) {
-                return;
-            }
+    const handleNewMessage = (message) => {
+        const messageConversationId =
+            message.conversation?._id ||
+            message.conversation;
 
-            setMessages((prev) =>
-                prev.map((message) => ({
-                    ...message,
-                    read: true,
-                    isRead: true,
-                }))
-            );
-        };
-
-        socket.on("userOnline", handleUserOnline);
-        socket.on("userOffline", handleUserOffline);
-        socket.on("messagesRead", handleMessagesRead);
-
-        const handleStopTyping = () => {
-            setIsTyping(false);
-        };
-
-        socket.on("typing", handleTyping);
-        socket.on("stopTyping", handleStopTyping);
-
-
-        if (socket.connected) {
-
-            socket.emit("joinConversation", {
-                conversationId: conversation._id,
-                userId: currentUserId,
-            });
-
-            socket.emit("markMessagesRead", {
-                conversationId: conversation._id,
-                userId: currentUserId,
-            });
+        if (
+            messageConversationId?.toString() !==
+            conversation._id.toString()
+        ) {
+            return;
         }
 
-        return () => {
+        const senderId =
+            message.sender?._id ||
+            message.sender;
 
-            socket.off("connect", handleConnect);
-            socket.off("newMessage", handleNewMessage);
-            socket.off("typing", handleTyping);
-            socket.off("stopTyping", handleStopTyping);
-            socket.off("userOnline", handleUserOnline);
-            socket.off("userOffline", handleUserOffline);
-            socket.off("messagesRead", handleMessagesRead);
-            socket.off("messageDeleted", handleMessageDeleted);
-            socket.off("messageEdited", handleMessageEdited);
-            socket.off("messageReaction", handleMessageReaction);
-        };
-    }, [conversation, otherUserId]);
+        if (
+            senderId?.toString() ===
+            currentUserId?.toString()
+        ) {
+            return;
+        }
+
+        setMessages((prev) => [
+            ...prev,
+            message,
+        ]);
+    };
+
+    const handleMessageDeleted = ({ messageId }) => {
+        setMessages((prev) =>
+            prev.filter(
+                (message) =>
+                    message._id !== messageId
+            )
+        );
+    };
+
+    const handleMessageEdited = (updatedMessage) => {
+        setMessages((prev) =>
+            prev.map((message) =>
+                message._id === updatedMessage._id
+                    ? updatedMessage
+                    : message
+            )
+        );
+    };
+
+    const handleMessagesRead = ({ conversationId }) => {
+        if (
+            conversationId?.toString() !==
+            conversation._id.toString()
+        ) {
+            return;
+        }
+
+        setMessages((prev) =>
+            prev.map((message) => ({
+                ...message,
+                read: true,
+                isRead: true,
+            }))
+        );
+    };
+
+    const handleTyping = () => {
+        setIsTyping(true);
+    };
+
+    const handleStopTyping = () => {
+        setIsTyping(false);
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("userOnline", handleUserOnline);
+    socket.on("userOffline", handleUserOffline);
+    socket.on("onlineUsers", handleOnlineUsers);
+
+    socket.on("newMessage", handleNewMessage);
+    socket.on("messageDeleted", handleMessageDeleted);
+    socket.on("messageEdited", handleMessageEdited);
+    socket.on("messagesRead", handleMessagesRead);
+
+    socket.on("typing", handleTyping);
+    socket.on("stopTyping", handleStopTyping);
+
+    if (!socket.connected) {
+        socket.connect();
+    } else {
+        handleConnect();
+    }
+
+    return () => {
+        socket.off("connect", handleConnect);
+
+        socket.off("userOnline", handleUserOnline);
+        socket.off("userOffline", handleUserOffline);
+        socket.off("onlineUsers", handleOnlineUsers);
+
+        socket.off("newMessage", handleNewMessage);
+        socket.off("messageDeleted", handleMessageDeleted);
+        socket.off("messageEdited", handleMessageEdited);
+        socket.off("messagesRead", handleMessagesRead);
+
+        socket.off("typing", handleTyping);
+        socket.off("stopTyping", handleStopTyping);
+    };
+
+}, [conversation, otherUserId]);
 
 
     if (!conversation) {
