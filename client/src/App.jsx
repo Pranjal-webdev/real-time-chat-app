@@ -21,12 +21,12 @@ function App() {
             return;
         }
 
-        socket.connect();
-
         const handleConnect = () => {
             console.log("Socket connected:", socket.id);
 
             const userId = localStorage.getItem("userId");
+
+            console.log("MY USER ID:", userId);
 
             if (userId) {
                 socket.emit("userOnline", userId);
@@ -37,8 +37,17 @@ function App() {
             console.log("Socket disconnected");
         };
 
+        // FIRST listeners
         socket.on("connect", handleConnect);
         socket.on("disconnect", handleDisconnect);
+
+        // THEN connect
+        socket.connect();
+
+        // If already connected
+        if (socket.connected) {
+            handleConnect();
+        }
 
         return () => {
             socket.off("connect", handleConnect);
@@ -47,7 +56,6 @@ function App() {
         };
 
     }, [isAuthenticated]);
-
 
     if (!isAuthenticated) {
 

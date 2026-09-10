@@ -81,44 +81,38 @@ export const initializeSocket = (server) => {
 
         socket.on("userOnline", (userId) => {
 
-            onlineUsers.set(
-                userId.toString(),
-                socket.id
-            );
+            const userIdString = userId.toString();
 
-            socket.join(userId.toString());
+            onlineUsers.set(userIdString, socket.id);
 
-            socket.broadcast.emit("userOnline", {
-                userId,
+            socket.join(userIdString);
+
+            socket.emit("onlineUsers", {
+                userIds: [...onlineUsers.keys()],
             });
 
-            console.log(
-                "ONLINE USER:",
-                userId.toString()
-            );
+            socket.broadcast.emit("userOnline", {
+                userId: userIdString,
+            });
+
+            console.log("ONLINE USER:", userIdString);
         });
 
         socket.on("checkUserOnline", (userId) => {
-
-            const isOnline = onlineUsers.has(
-                userId.toString()
-            );
+            const userIdString = userId.toString();
+            const isOnline = onlineUsers.has(userIdString);
 
             console.log(
                 "CHECK USER:",
-                userId.toString(),
+                userIdString,
                 "ONLINE:",
                 isOnline
             );
 
-            socket.emit(
-                isOnline
-                    ? "userOnline"
-                    : "userOffline",
-                {
-                    userId,
-                }
-            );
+            socket.emit("userStatus", {
+                userId: userIdString,
+                isOnline,
+            });
         });
 
         socket.on("disconnect", () => {
@@ -129,6 +123,8 @@ export const initializeSocket = (server) => {
                     socket.broadcast.emit("userOffline", {
                         userId,
                     });
+
+                    console.log("OFFLINE USER:", userId);
 
                     break;
                 }

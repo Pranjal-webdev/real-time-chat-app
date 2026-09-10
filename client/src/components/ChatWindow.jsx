@@ -166,17 +166,6 @@ const ChatWindow = ({ conversation }) => {
         );
     };
 
-
-    const handleMessageReaction = (updatedMessage) => {
-        setMessages((prev) =>
-            prev.map((message) =>
-                message._id === updatedMessage._id
-                    ? updatedMessage
-                    : message
-            )
-        );
-    };
-
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({
             behavior: "smooth",
@@ -185,193 +174,216 @@ const ChatWindow = ({ conversation }) => {
 
 
     useEffect(() => {
-    if (!conversation || !otherUserId) return;
+        if (!conversation || !otherUserId) return;
 
-    setIsOnline(false);
+        setIsOnline(false);
 
-    const fetchMessages = async () => {
-        try {
-            setLoading(true);
+        const fetchMessages = async () => {
+            try {
+                setLoading(true);
 
-            const token = localStorage.getItem("token");
+                const token = localStorage.getItem("token");
 
-            const response = await axios.get(
-                `http://localhost:5001/api/messages/${conversation._id}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+                const response = await axios.get(
+                    `http://localhost:5001/api/messages/${conversation._id}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
 
-            setMessages(response.data.messages || []);
+                setMessages(response.data.messages || []);
 
-        } catch (error) {
-            console.error(
-                "Fetch Messages Error:",
-                error.response?.data || error.message
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
+            } catch (error) {
+                console.error(
+                    "Fetch Messages Error:",
+                    error.response?.data || error.message
+                );
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    fetchMessages();
+        fetchMessages();
 
-    const handleConnect = () => {
-        console.log("Socket connected:", socket.id);
+        const handleConnect = () => {
+            console.log("Socket connected:", socket.id);
 
-        socket.emit("joinConversation", {
-            conversationId: conversation._id,
-            userId: currentUserId,
-        });
+            socket.emit("joinConversation", {
+                conversationId: conversation._id,
+                userId: currentUserId,
+            });
 
-        socket.emit("markMessagesRead", {
-            conversationId: conversation._id,
-            userId: currentUserId,
-        });
+            socket.emit("markMessagesRead", {
+                conversationId: conversation._id,
+                userId: currentUserId,
+            });
 
-        // Check other user's current status
-        socket.emit("checkUserOnline", otherUserId);
-    };
+            socket.emit("checkUserOnline", otherUserId);
+        };
 
-    const handleUserOnline = ({ userId }) => {
-        if (
-            userId?.toString() ===
-            otherUserId?.toString()
-        ) {
-            setIsOnline(true);
-        }
-    };
-
-    const handleUserOffline = ({ userId }) => {
-        if (
-            userId?.toString() ===
-            otherUserId?.toString()
-        ) {
-            setIsOnline(false);
-        }
-    };
-
-    const handleOnlineUsers = ({ userIds }) => {
-        const online = userIds?.some(
-            (id) =>
-                id?.toString() ===
+        const handleUserOnline = ({ userId }) => {
+            if (
+                userId?.toString() ===
                 otherUserId?.toString()
-        );
+            ) {
+                setIsOnline(true);
+            }
+        };
 
-        setIsOnline(online);
-    };
+        const handleUserOffline = ({ userId }) => {
+            if (
+                userId?.toString() ===
+                otherUserId?.toString()
+            ) {
+                setIsOnline(false);
+            }
+        };
 
-    const handleNewMessage = (message) => {
-        const messageConversationId =
-            message.conversation?._id ||
-            message.conversation;
+        const handleUserStatus = ({ userId, isOnline }) => {
+            if (
+                userId?.toString() ===
+                otherUserId?.toString()
+            ) {
+                setIsOnline(isOnline);
+            }
+        };
 
-        if (
-            messageConversationId?.toString() !==
-            conversation._id.toString()
-        ) {
-            return;
+        const handleMessageReaction = (updatedMessage) => {
+            setMessages((prev) =>
+                prev.map((message) =>
+                    message._id === updatedMessage._id
+                        ? updatedMessage
+                        : message
+                )
+            );
+        };
+
+
+        const handleOnlineUsers = ({ userIds }) => {
+            const online = userIds?.some(
+                (id) =>
+                    id?.toString() ===
+                    otherUserId?.toString()
+            );
+
+            setIsOnline(online);
+        };
+
+        const handleNewMessage = (message) => {
+            const messageConversationId =
+                message.conversation?._id ||
+                message.conversation;
+
+            if (
+                messageConversationId?.toString() !==
+                conversation._id.toString()
+            ) {
+                return;
+            }
+
+            const senderId =
+                message.sender?._id ||
+                message.sender;
+
+            if (
+                senderId?.toString() ===
+                currentUserId?.toString()
+            ) {
+                return;
+            }
+
+            setMessages((prev) => [
+                ...prev,
+                message,
+            ]);
+        };
+
+        const handleMessageDeleted = ({ messageId }) => {
+            setMessages((prev) =>
+                prev.filter(
+                    (message) =>
+                        message._id !== messageId
+                )
+            );
+        };
+
+        const handleMessageEdited = (updatedMessage) => {
+            setMessages((prev) =>
+                prev.map((message) =>
+                    message._id === updatedMessage._id
+                        ? updatedMessage
+                        : message
+                )
+            );
+        };
+
+        const handleMessagesRead = ({ conversationId }) => {
+            if (
+                conversationId?.toString() !==
+                conversation._id.toString()
+            ) {
+                return;
+            }
+
+            setMessages((prev) =>
+                prev.map((message) => ({
+                    ...message,
+                    read: true,
+                    isRead: true,
+                }))
+            );
+        };
+
+        const handleTyping = () => {
+            setIsTyping(true);
+        };
+
+        const handleStopTyping = () => {
+            setIsTyping(false);
+        };
+
+
+        socket.on("userOnline", handleUserOnline);
+        socket.on("userOffline", handleUserOffline);
+        socket.on("onlineUsers", handleOnlineUsers);
+        socket.on("userStatus", handleUserStatus);
+
+
+        if (socket.connected) {
+            handleConnect();
         }
 
-        const senderId =
-            message.sender?._id ||
-            message.sender;
+        socket.on("newMessage", handleNewMessage);
+        socket.on("messageDeleted", handleMessageDeleted);
+        socket.on("messageEdited", handleMessageEdited);
+        socket.on("messageReaction", handleMessageReaction);
+        socket.on("messagesRead", handleMessagesRead);
 
-        if (
-            senderId?.toString() ===
-            currentUserId?.toString()
-        ) {
-            return;
-        }
+        socket.on("typing", handleTyping);
+        socket.on("stopTyping", handleStopTyping);
 
-        setMessages((prev) => [
-            ...prev,
-            message,
-        ]);
-    };
 
-    const handleMessageDeleted = ({ messageId }) => {
-        setMessages((prev) =>
-            prev.filter(
-                (message) =>
-                    message._id !== messageId
-            )
-        );
-    };
 
-    const handleMessageEdited = (updatedMessage) => {
-        setMessages((prev) =>
-            prev.map((message) =>
-                message._id === updatedMessage._id
-                    ? updatedMessage
-                    : message
-            )
-        );
-    };
+        return () => {
 
-    const handleMessagesRead = ({ conversationId }) => {
-        if (
-            conversationId?.toString() !==
-            conversation._id.toString()
-        ) {
-            return;
-        }
+            socket.off("userOnline", handleUserOnline);
+            socket.off("userOffline", handleUserOffline);
+            socket.off("onlineUsers", handleOnlineUsers);
+            socket.off("userStatus", handleUserStatus);
 
-        setMessages((prev) =>
-            prev.map((message) => ({
-                ...message,
-                read: true,
-                isRead: true,
-            }))
-        );
-    };
+            socket.off("newMessage", handleNewMessage);
+            socket.off("messageDeleted", handleMessageDeleted);
+            socket.off("messageEdited", handleMessageEdited);
+            socket.off("messageReaction", handleMessageReaction);
+            socket.off("messagesRead", handleMessagesRead);
 
-    const handleTyping = () => {
-        setIsTyping(true);
-    };
+            socket.off("typing", handleTyping);
+            socket.off("stopTyping", handleStopTyping);
+        };
 
-    const handleStopTyping = () => {
-        setIsTyping(false);
-    };
-
-    socket.on("connect", handleConnect);
-    socket.on("userOnline", handleUserOnline);
-    socket.on("userOffline", handleUserOffline);
-    socket.on("onlineUsers", handleOnlineUsers);
-
-    socket.on("newMessage", handleNewMessage);
-    socket.on("messageDeleted", handleMessageDeleted);
-    socket.on("messageEdited", handleMessageEdited);
-    socket.on("messagesRead", handleMessagesRead);
-
-    socket.on("typing", handleTyping);
-    socket.on("stopTyping", handleStopTyping);
-
-    if (!socket.connected) {
-        socket.connect();
-    } else {
-        handleConnect();
-    }
-
-    return () => {
-        socket.off("connect", handleConnect);
-
-        socket.off("userOnline", handleUserOnline);
-        socket.off("userOffline", handleUserOffline);
-        socket.off("onlineUsers", handleOnlineUsers);
-
-        socket.off("newMessage", handleNewMessage);
-        socket.off("messageDeleted", handleMessageDeleted);
-        socket.off("messageEdited", handleMessageEdited);
-        socket.off("messagesRead", handleMessagesRead);
-
-        socket.off("typing", handleTyping);
-        socket.off("stopTyping", handleStopTyping);
-    };
-
-}, [conversation, otherUserId]);
+    }, [conversation, otherUserId]);
 
 
     if (!conversation) {

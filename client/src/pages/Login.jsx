@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Login = ({ onRegister, onLoginSuccess }) => {
 
@@ -7,6 +8,8 @@ const Login = ({ onRegister, onLoginSuccess }) => {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -30,8 +33,14 @@ const Login = ({ onRegister, onLoginSuccess }) => {
             const { token, user } = response.data;
 
             localStorage.setItem("token", token);
-            localStorage.setItem("userId", user._id);
+            console.log("LOGIN USER:", user);
+            console.log("LOGIN USER ID:", user._id);
+            console.log("LOGIN USER ID 2:", user.id);
 
+            localStorage.setItem(
+                "userId",
+                user._id || user.id
+            );
             onLoginSuccess();
 
             navigate("/chat");

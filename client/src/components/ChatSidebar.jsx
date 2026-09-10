@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import socket from "../socket/socket";
-import FriendRequests from "./FriendRequests";
 import { useNavigate } from "react-router-dom";
+
 
 const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
@@ -16,6 +16,8 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
     const [pendingRequests, setPendingRequests] = useState([]);
     const [followedUsers, setFollowedUsers] = useState([]);
     const [receivedRequestsCount, setReceivedRequestsCount] = useState(0);
+    const [onlineUsers, setOnlineUsers] = useState([]);
+    const [socketConnected, setSocketConnected] = useState(socket.connected);
 
 
     const fetchReceivedRequestsCount = async () => {
@@ -45,8 +47,23 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
     useEffect(() => {
         fetchReceivedRequestsCount();
+
+        const handleSocketConnect = () => {
+            setSocketConnected(true);
+        };
+
+        const handleSocketDisconnect = () => {
+            setSocketConnected(false);
+        };
+
+        socket.on("connect", handleSocketConnect);
+        socket.on("disconnect", handleSocketDisconnect);
+
+        socket.off("connect", handleSocketConnect);
+        socket.off("disconnect", handleSocketDisconnect);
+
     }, []);
-    
+
 
     const fetchSentRequests = async () => {
 
@@ -285,6 +302,26 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
 
     useEffect(() => {
+        
+        const handleSocketConnect = () => {
+            setSocketConnected(true);
+        };
+
+        const handleSocketDisconnect = () => {
+            setSocketConnected(false);
+        };
+
+        socket.on("connect", handleSocketConnect);
+        socket.on("disconnect", handleSocketDisconnect);
+
+        return () => {
+            socket.off("connect", handleSocketConnect);
+            socket.off("disconnect", handleSocketDisconnect);
+        };
+    }, []);
+
+
+    useEffect(() => {
 
         const fetchConversations = async () => {
 
@@ -318,6 +355,31 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
         fetchConversations();
         fetchSentRequests();
+
+
+        const handleOnlineUsers = ({ userIds }) => {
+            setOnlineUsers(userIds || []);
+        };
+
+        const handleUserOnline = ({ userId }) => {
+            setOnlineUsers((prev) =>
+                prev.includes(userId?.toString())
+                    ? prev
+                    : [...prev, userId?.toString()]
+            );
+        };
+
+        const handleUserOffline = ({ userId }) => {
+            setOnlineUsers((prev) =>
+                prev.filter(
+                    (id) => id?.toString() !== userId?.toString()
+                )
+            );
+        };
+
+        socket.on("onlineUsers", handleOnlineUsers);
+        socket.on("userOnline", handleUserOnline);
+        socket.on("userOffline", handleUserOffline);
 
         const handleNewMessage = (message) => {
 
@@ -354,6 +416,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                 })
             );
         };
+
 
         const handleFriendRequestAccepted = (conversation) => {
 
@@ -406,6 +469,10 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
             socket.off("friendRequestAccepted", handleFriendRequestAccepted);
             socket.off("newMessage", handleNewMessage);
+
+            socket.off("onlineUsers", handleOnlineUsers);
+            socket.off("userOnline", handleUserOnline);
+            socket.off("userOffline", handleUserOffline);
 
         };
 
@@ -462,7 +529,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                     </div>
 
                     <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
-                        {pendingRequests.length}
+                        {receivedRequestsCount}
                     </div>
                 </div>
             </div>
@@ -630,7 +697,16 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
                                     </div>
 
-                                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
+                                    <span
+                                        className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${onlineUsers.some(
+                                            (id) =>
+                                                id?.toString() ===
+                                                otherUser?._id?.toString()
+                                        )
+                                            ? "bg-green-500"
+                                            : "bg-black"
+                                            }`}
+                                    />
 
                                 </div>
 
@@ -709,10 +785,14 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                             My Account
                         </p>
 
-                        <p className="text-xs text-green-600">
-                            ● Online
+                        <p
+                            className={`text-xs ${socketConnected
+                                ? "text-green-600"
+                                : "text-gray-500"
+                                }`}
+                        >
+                            {socketConnected ? "● Online" : "● Offline"}
                         </p>
-
                     </div>
 
                 </div>
