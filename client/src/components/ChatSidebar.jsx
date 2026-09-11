@@ -538,12 +538,12 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                 <div className="border-b max-h-60 overflow-y-auto">
 
                     {searching ? (
-                        <p className="p-4 text-gray-500">
+                        <p className="p-4 text-center text-gray-500">
                             Searching...
                         </p>
 
                     ) : users.length === 0 ? (
-                        <p className="p-4 text-gray-500">
+                        <p className="p-4 text-center text-gray-500">
                             No users found
                         </p>
 

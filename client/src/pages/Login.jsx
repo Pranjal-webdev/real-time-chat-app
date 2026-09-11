@@ -1,6 +1,5 @@
 import { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 
 const Login = ({ onRegister, onLoginSuccess }) => {
 
@@ -9,7 +8,6 @@ const Login = ({ onRegister, onLoginSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -42,8 +40,6 @@ const Login = ({ onRegister, onLoginSuccess }) => {
                 user._id || user.id
             );
             onLoginSuccess();
-
-            navigate("/chat");
 
         } catch (error) {
             console.error(

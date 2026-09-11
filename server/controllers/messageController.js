@@ -35,7 +35,7 @@ export const sendMessage = async (req, res) => {
                 message: "You are not a participant of this conversation",
             });
         }
-        
+
         const message = await Message.create({
             conversation: conversationId,
             sender: req.user._id,
@@ -72,7 +72,7 @@ export const sendMessage = async (req, res) => {
                 },
             });
 
-        
+
         const io = getIO();
 
         io.to(`conversation:${conversationId}`).emit(
@@ -295,7 +295,7 @@ export const uploadMessage = async (req, res) => {
             fileName: req.file.originalname,
         });
 
-         await Conversation.findByIdAndUpdate(
+        await Conversation.findByIdAndUpdate(
             conversationId,
             {
                 lastMessage: message._id,
@@ -317,6 +317,14 @@ export const uploadMessage = async (req, res) => {
                         select: "name email profileImage",
                     },
                 });
+
+        const io = getIO();
+
+        io.to(`conversation:${conversationId}`).emit(
+            "newMessage",
+            populatedMessage
+        );
+
 
         res.status(201).json({
             success: true,

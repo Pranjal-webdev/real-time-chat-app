@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import socket from "../socket/socket";
 
-const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply }) => {
+const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply ,onImageUploadStart }) => {
 
     const [message, setMessage] = useState("");
     const [sending, setSending] = useState(false);
@@ -18,6 +18,8 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply })
 
         try {
             setUploading(true);
+            
+            onImageUploadStart?.();
 
             const token = localStorage.getItem("token");
 
@@ -40,7 +42,7 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply })
                 }
             );
 
-            onMessageSent(response.data.message);
+            onMessageSent(response.data.message,true);
 
         } catch (error) {
             console.error(
@@ -139,10 +141,17 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply })
                 onClick={() =>
                     fileInputRef.current?.click()
                 }
-                disabled={uploading}
+                disabled={sending || uploading}
                 className="bg-gray-200 px-4 rounded-lg"
             >
-                {uploading ? "Uploading..." : "📎"}
+                {uploading ? (
+                    <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-gray-400 border-t-blue-600 rounded-full animate-spin" />
+                        <span>Uploading...</span>
+                    </div>
+                ) : (
+                    "📎"
+                )}
             </button>
 
             <input
@@ -172,6 +181,7 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply })
 
             <button
                 type="submit"
+                disabled={sending || !message.trim()}
                 className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-7 py-3 rounded-xl font-semibold transition"
             >
                 {sending ? "Sending..." : "Send"}

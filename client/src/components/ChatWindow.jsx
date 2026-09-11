@@ -10,6 +10,7 @@ const ChatWindow = ({ conversation }) => {
     const [isTyping, setIsTyping] = useState(false);
     const [isOnline, setIsOnline] = useState(false);
     const [replyTo, setReplyTo] = useState(null);
+    const [loadingImages, setLoadingImages] = useState({});
     const messagesEndRef = useRef(null);
 
     const currentUserId = localStorage.getItem("userId");
@@ -61,6 +62,7 @@ const ChatWindow = ({ conversation }) => {
 
 
     const handleEditMessage = async (message) => {
+
         const newText = prompt("Edit message:", message.text);
 
         if (!newText || !newText.trim()) return;
@@ -174,6 +176,7 @@ const ChatWindow = ({ conversation }) => {
 
 
     useEffect(() => {
+
         if (!conversation || !otherUserId) return;
 
         setIsOnline(false);
@@ -272,6 +275,7 @@ const ChatWindow = ({ conversation }) => {
         };
 
         const handleNewMessage = (message) => {
+
             const messageConversationId =
                 message.conversation?._id ||
                 message.conversation;
@@ -522,13 +526,43 @@ const ChatWindow = ({ conversation }) => {
 
                                             {message.messageType === "image" &&
                                                 message.fileUrl && (
-                                                    <img
-                                                        src={`http://localhost:5001${message.fileUrl}`}
-                                                        alt={message.fileName || "Image"}
-                                                        className="max-w-xs rounded-lg"
-                                                    />
-                                                )}
+                                                    <div className="relative w-48 h-48 rounded-lg overflow-hidden bg-gray-100">
 
+                                                        {loadingImages[message._id] !== false && (
+                                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 z-10">
+
+                                                                <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+
+                                                                <p className="text-xs text-gray-500 mt-2">
+                                                                    Loading image...
+                                                                </p>
+
+                                                            </div>
+                                                        )}
+
+                                                        <img
+                                                            src={`http://localhost:5001${message.fileUrl}`}
+                                                            alt={message.fileName || "Image"}
+                                                            onLoad={() => {
+                                                                setLoadingImages((prev) => ({
+                                                                    ...prev,
+                                                                    [message._id]: false,
+                                                                }));
+                                                            }}
+                                                            onError={() => {
+                                                                setLoadingImages((prev) => ({
+                                                                    ...prev,
+                                                                    [message._id]: false,
+                                                                }));
+                                                            }}
+                                                            className={`w-full h-full object-cover transition-opacity duration-300 ${loadingImages[message._id] === false
+                                                                    ? "opacity-100"
+                                                                    : "opacity-0"
+                                                                }`}
+                                                        />
+
+                                                    </div>
+                                                )}
                                             {message.messageType === "file" &&
                                                 message.fileUrl && (
                                                     <a
@@ -662,11 +696,20 @@ const ChatWindow = ({ conversation }) => {
                 conversationId={conversation._id}
                 replyTo={replyTo}
                 onCancelReply={() => setReplyTo(null)}
-                onMessageSent={(message) => {
+                onImageUploadStart={() => {
+                    console.log("🔥 IMAGE UPLOAD START");
+                    setSendingImage(true)
+                }}
+                onMessageSent={(message, isImage = false) => {
                     setMessages((prev) => [
                         ...prev,
                         message,
                     ]);
+
+                    if (isImage) {
+                        setSendingImage(false);
+                    }
+
                     setReplyTo(null);
                 }}
             />
