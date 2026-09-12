@@ -115,6 +115,15 @@ export const initializeSocket = (server) => {
             });
         });
 
+        socket.on("attachmentSent", ({ conversationId, message }) => {
+            console.log("ATTACHMENT RELEASED:", message?._id);
+
+            io.to(`conversation:${conversationId}`).emit(
+                "newMessage",
+                message
+            );
+        });
+
         socket.on("disconnect", () => {
             for (const [userId, socketId] of onlineUsers.entries()) {
                 if (socketId === socket.id) {

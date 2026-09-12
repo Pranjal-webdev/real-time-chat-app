@@ -72,6 +72,7 @@ export const sendMessage = async (req, res) => {
                 },
             });
 
+        console.log("EMITTING ATTACHMENT:", populatedMessage._id);
 
         const io = getIO();
 
@@ -317,14 +318,6 @@ export const uploadMessage = async (req, res) => {
                         select: "name email profileImage",
                     },
                 });
-
-        const io = getIO();
-
-        io.to(`conversation:${conversationId}`).emit(
-            "newMessage",
-            populatedMessage
-        );
-
 
         res.status(201).json({
             success: true,
