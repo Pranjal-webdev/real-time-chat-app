@@ -3,7 +3,7 @@ import axios from "axios";
 import socket from "../socket/socket";
 import MessageInput from "./MessageInput";
 
-const ChatWindow = ({ conversation }) => {
+const ChatWindow = ({ conversation, onBack }) => {
 
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -15,6 +15,8 @@ const ChatWindow = ({ conversation }) => {
     const [pendingAttachment, setPendingAttachment] = useState(null);
     const [pendingReleaseMessage, setPendingReleaseMessage] = useState(null);
     const messagesEndRef = useRef(null);
+    const chatContainerRef = useRef(null);
+    const [showScrollButton, setShowScrollButton] = useState(false);
 
     const currentUserId = localStorage.getItem("userId");
 
@@ -37,12 +39,47 @@ const ChatWindow = ({ conversation }) => {
         return URL.createObjectURL(blob);
     };
 
+    const scrollToBottom = () => {
+        const container = chatContainerRef.current;
+
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+            setShowScrollButton(false);
+        }
+    };
+
     const loadAttachment = async (message, autoLoad = false) => {
         if (!message?.fileUrl) return;
 
         try {
             const requestUrl =
                 `http://localhost:5001${message.fileUrl}`;
+
+            const cache = await getAttachmentCache();
+
+            const cachedResponse = await cache.match(requestUrl);
+
+            if (cachedResponse) {
+                setAttachmentStatus((prev) => ({
+                    ...prev,
+                    [message._id]: "loading",
+                }));
+
+                const objectUrl =
+                    await createObjectUrlFromResponse(cachedResponse);
+
+                setAttachmentUrls((prev) => ({
+                    ...prev,
+                    [message._id]: objectUrl,
+                }));
+
+                setAttachmentStatus((prev) => ({
+                    ...prev,
+                    [message._id]: "loaded",
+                }));
+
+                return;
+            }
 
             if (!autoLoad) {
                 setAttachmentStatus((prev) => ({
@@ -58,28 +95,7 @@ const ChatWindow = ({ conversation }) => {
                 [message._id]: "loading",
             }));
 
-            const cache = await getAttachmentCache();
-
-            let response = await cache.match(requestUrl);
-
-            if (response) {
-                const objectUrl =
-                    await createObjectUrlFromResponse(response);
-
-                setAttachmentUrls((prev) => ({
-                    ...prev,
-                    [message._id]: objectUrl,
-                }));
-
-                setAttachmentStatus((prev) => ({
-                    ...prev,
-                    [message._id]: "loaded",
-                }));
-
-                return;
-            }
-
-            response = await fetch(requestUrl);
+            const response = await fetch(requestUrl);
 
             if (!response.ok) {
                 throw new Error("Failed to load attachment");
@@ -282,11 +298,14 @@ const ChatWindow = ({ conversation }) => {
     };
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({
-            behavior: "smooth",
-        });
-    }, [messages]);
+        if (!loading && messages.length > 0) {
+            const container = chatContainerRef.current;
 
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+    }, [loading, conversation?._id]);
 
     useEffect(() => {
 
@@ -417,7 +436,7 @@ const ChatWindow = ({ conversation }) => {
                 message.sender?._id ||
                 message.sender;
 
-            // Don't add our own message again
+
             if (
                 senderId?.toString() ===
                 currentUserId?.toString()
@@ -425,24 +444,39 @@ const ChatWindow = ({ conversation }) => {
                 return;
             }
 
-            // ATTACHMENT
+
             if (
                 message.fileUrl &&
                 (message.messageType === "image" ||
                     message.messageType === "file")
             ) {
-                // FIRST add message with loading state
+
                 setAttachmentStatus((prev) => ({
                     ...prev,
                     [message._id]: "loading",
                 }));
 
-                setMessages((prev) => [
-                    ...prev,
-                    message,
-                ]);
+                const container = chatContainerRef.current;
 
-                // THEN start actual download
+                if (
+                    container &&
+                    container.scrollHeight -
+                    container.scrollTop -
+                    container.clientHeight >=
+                    50
+                ) {
+                    setShowScrollButton(true);
+                }
+
+                setMessages((prev) => {
+                    if (prev.some((msg) => msg._id === message._id)) {
+                        return prev;
+                    }
+
+                    return [...prev, message];
+                });
+
+
                 setTimeout(() => {
                     loadAttachment(message, true);
                 }, 100);
@@ -450,11 +484,25 @@ const ChatWindow = ({ conversation }) => {
                 return;
             }
 
-            // Normal text message
-            setMessages((prev) => [
-                ...prev,
-                message,
-            ]);
+            const container = chatContainerRef.current;
+
+            if (
+                container &&
+                container.scrollHeight -
+                container.scrollTop -
+                container.clientHeight >=
+                50
+            ) {
+                setShowScrollButton(true);
+            }
+
+            setMessages((prev) => {
+                if (prev.some((msg) => msg._id === message._id)) {
+                    return prev;
+                }
+
+                return [...prev, message];
+            });
         };
         const handleMessageDeleted = ({ messageId }) => {
             setMessages((prev) =>
@@ -571,9 +619,17 @@ const ChatWindow = ({ conversation }) => {
 
     return (
 
-        <div className="flex-1 flex flex-col h-full min-w-0 bg-white">
+        <div className="relative flex-1 flex flex-col h-full min-w-0 bg-white">
 
             <div className="flex items-center gap-3">
+
+                <button
+                    type="button"
+                    onClick={onBack}
+                    className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-2xl text-gray-600 shrink-0"
+                >
+                    ❮
+                </button>
 
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
                     {otherUser?.name
@@ -591,12 +647,33 @@ const ChatWindow = ({ conversation }) => {
 
             </div>
 
-            <div className="flex-1 px-6 py-5 overflow-y-auto bg-slate-50">
+            <div
+                ref={chatContainerRef}
+                onScroll={() => {
+                    const container = chatContainerRef.current;
+
+                    if (!container) return;
+
+                    const isAtBottom =
+                        container.scrollHeight -
+                        container.scrollTop -
+                        container.clientHeight <
+                        50;
+
+                    setShowScrollButton(!isAtBottom);
+                }}
+                className="flex-1 px-6 py-5 overflow-y-auto bg-slate-50"
+            >
 
                 {loading ? (
-                    <p className="text-gray-500 text-center">
-                        Loading messages...
-                    </p>
+                    <div className="flex-1 flex items-center justify-center bg-slate-50">
+                        <div className="flex flex-col items-center gap-3">
+                            <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                            <p className="text-sm text-gray-500">
+                                Loading messages...
+                            </p>
+                        </div>
+                    </div>
                 ) : messages.length === 0 ? (
                     <p className="text-gray-500 text-center mt-10">
                         No messages yet
@@ -632,18 +709,17 @@ const ChatWindow = ({ conversation }) => {
 
                                     <div
                                         className={`flex ${isMine
-                                                ? "justify-end"
-                                                : "justify-start"
+                                            ? "justify-end"
+                                            : "justify-start"
                                             }`}
                                     >
                                         <div
                                             className={`max-w-md px-4 py-3 rounded-2xl ${isMine
-                                                    ? "bg-blue-600 text-white rounded-bl-none"
-                                                    : "bg-white text-gray-800 rounded-rl-none shadow-sm"
+                                                ? "bg-blue-600 text-white rounded-bl-none"
+                                                : "bg-white text-gray-800 rounded-rl-none shadow-sm"
                                                 }`}
                                         >
 
-                                            {/* Reply */}
                                             {message.replyTo && (
                                                 <div className="mb-2 p-2 rounded bg-black/10 border-l-2 border-gray-400">
                                                     <p className="text-xs font-semibold">
@@ -656,12 +732,12 @@ const ChatWindow = ({ conversation }) => {
                                                 </div>
                                             )}
 
-                                            {/* IMAGE */}
+
                                             {message.messageType === "image" &&
                                                 message.fileUrl && (
                                                     <>
                                                         {attachmentStatus[message._id] === "loading" ? (
-                                                            <div className="w-48 h-48 bg-gray-100 rounded-lg flex flex-col items-center justify-center">
+                                                            <div className="w-48 max-w-full h-48 bg-gray-100 rounded-lg flex flex-col items-center justify-center">
                                                                 <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
 
                                                                 <p className="text-xs text-gray-500 mt-2">
@@ -672,13 +748,13 @@ const ChatWindow = ({ conversation }) => {
                                                             <img
                                                                 src={attachmentUrls[message._id]}
                                                                 alt={message.fileName || "Image"}
-                                                                className="max-w-xs rounded-lg"
+                                                                className="w-48 h-48 object-contain rounded-lg"
                                                             />
                                                         ) : isMine ? (
                                                             <img
                                                                 src={`http://localhost:5001${message.fileUrl}`}
                                                                 alt={message.fileName || "Image"}
-                                                                className="max-w-xs rounded-lg"
+                                                                className="w-48 h-48 object-contain rounded-lg"
                                                             />
                                                         ) : (
                                                             <button
@@ -686,7 +762,7 @@ const ChatWindow = ({ conversation }) => {
                                                                 onClick={() =>
                                                                     loadAttachment(message, true)
                                                                 }
-                                                                className="w-48 h-48 bg-gray-100 rounded-lg flex flex-col items-center justify-center hover:bg-gray-200 transition"
+                                                                className="w-48 max-w-full h-48 bg-gray-100 rounded-lg flex flex-col items-center justify-center hover:bg-gray-200 transition"
                                                             >
                                                                 <span className="text-4xl">
                                                                     ⬇️
@@ -704,12 +780,12 @@ const ChatWindow = ({ conversation }) => {
                                                     </>
                                                 )}
 
-                                            {/* FILE */}
+
                                             {message.messageType === "file" &&
                                                 message.fileUrl && (
                                                     <>
                                                         {attachmentStatus[message._id] === "loading" ? (
-                                                            <div className="flex items-center gap-3">
+                                                            <div className="flex items-center gap-3 max-w-full ">
                                                                 <div className="w-6 h-6 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
 
                                                                 <span>
@@ -720,18 +796,22 @@ const ChatWindow = ({ conversation }) => {
                                                             <a
                                                                 href={attachmentUrls[message._id]}
                                                                 download={message.fileName}
-                                                                className="flex items-center gap-3 underline"
+                                                                className="flex items-center gap-3 w-fit max-w-[220px] underline"
                                                             >
-                                                                📎 {message.fileName}
+                                                                <span className="truncate max-w-[180px]">
+                                                                    📎 {message.fileName}
+                                                                </span>
                                                             </a>
                                                         ) : isMine ? (
                                                             <a
                                                                 href={`http://localhost:5001${message.fileUrl}`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="flex items-center gap-3 underline"
+                                                                className="flex items-center gap-3 w-fit max-w-[220px] underline"
                                                             >
-                                                                📎 {message.fileName}
+                                                                <span className="truncate max-w-[180px]">
+                                                                    📎 {message.fileName}
+                                                                </span>
                                                             </a>
                                                         ) : (
                                                             <button
@@ -739,7 +819,7 @@ const ChatWindow = ({ conversation }) => {
                                                                 onClick={() =>
                                                                     loadAttachment(message, true)
                                                                 }
-                                                                className="flex items-center gap-3"
+                                                                className="flex items-center gap-3 max-w-full"
                                                             >
                                                                 <span className="text-2xl">
                                                                     ⬇️
@@ -759,23 +839,23 @@ const ChatWindow = ({ conversation }) => {
                                                     </>
                                                 )}
 
-                                            {/* TEXT */}
+
                                             {message.messageType === "text" && (
                                                 <p>{message.text}</p>
                                             )}
 
-                                            {/* EDITED */}
+
                                             {message.isEdited && (
                                                 <span className="text-xs opacity-70">
                                                     edited
                                                 </span>
                                             )}
 
-                                            {/* TIME */}
+
                                             <p
                                                 className={`text-xs mt-1 ${isMine
-                                                        ? "text-blue-100"
-                                                        : "text-gray-400"
+                                                    ? "text-blue-100"
+                                                    : "text-gray-400"
                                                     }`}
                                             >
                                                 {new Date(
@@ -786,7 +866,7 @@ const ChatWindow = ({ conversation }) => {
                                                 })}
                                             </p>
 
-                                            {/* DELETE */}
+
                                             {isMine && (
                                                 <button
                                                     onClick={() =>
@@ -798,7 +878,7 @@ const ChatWindow = ({ conversation }) => {
                                                 </button>
                                             )}
 
-                                            {/* EDIT */}
+
                                             {isMine && (
                                                 <button
                                                     onClick={() =>
@@ -810,7 +890,7 @@ const ChatWindow = ({ conversation }) => {
                                                 </button>
                                             )}
 
-                                            {/* REPLY */}
+
                                             <button
                                                 onClick={() => setReplyTo(message)}
                                                 className="text-xs px-2 py-1 cursor-pointer text-xl"
@@ -818,14 +898,14 @@ const ChatWindow = ({ conversation }) => {
                                                 Reply
                                             </button>
 
-                                            {/* SEEN */}
+
                                             {isMine && message.read && (
                                                 <p className="text-xs text-blue-200">
                                                     ✓✓ Seen
                                                 </p>
                                             )}
 
-                                            {/* REACTIONS */}
+
                                             <div className="flex gap-2 mt-2">
                                                 <button
                                                     onClick={() =>
@@ -933,6 +1013,16 @@ const ChatWindow = ({ conversation }) => {
 
             </div>
 
+            {showScrollButton && (
+                <button
+                    type="button"
+                    onClick={scrollToBottom}
+                    className="absolute bottom-24 right-5 w-10 h-10 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-xl hover:bg-gray-50 transition"
+                >
+                    ↓
+                </button>
+            )}
+
             {isTyping && (
                 <p className="text-sm text-gray-500 px-5 pb-2">
                     User is typing...
@@ -961,6 +1051,10 @@ const ChatWindow = ({ conversation }) => {
                     }));
 
                     setMessages((prev) => [...prev, message]);
+
+                    requestAnimationFrame(() => {
+                        scrollToBottom();
+                    });
 
                     if (pendingAttachment?.preview) {
                         URL.revokeObjectURL(pendingAttachment.preview);

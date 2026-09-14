@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+dotenv.config();
 import { createServer } from "http";
 import { initializeSocket } from "./socket/socket.js"
 import connectDB from "./config/db.js";
@@ -11,7 +12,7 @@ import userRoutes from "./routes/userRoutes.js";
 import path from "path";
 import friendRequestRoutes from "./routes/friendRequestRoutes.js";
 
-dotenv.config();
+
 connectDB();
 
 const app = express();

@@ -18,6 +18,8 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
     const [receivedRequestsCount, setReceivedRequestsCount] = useState(0);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [socketConnected, setSocketConnected] = useState(socket.connected);
+    const [friends, setFriends] = useState([]);
+    const [loggingOut, setLoggingOut] = useState(false);
 
 
     const fetchReceivedRequestsCount = async () => {
@@ -45,7 +47,37 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
         }
     };
 
+
     useEffect(() => {
+
+        const fetchFriends = async () => {
+            try {
+                const token = localStorage.getItem("token");
+
+                const response = await axios.get(
+                    "http://localhost:5001/api/friend-requests/friends",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                setFriends(response.data.friends || []);
+            } catch (error) {
+                console.error(
+                    "Fetch Friends Error:",
+                    error.response?.data || error.message
+                );
+            }
+        };
+
+        fetchFriends();
+    }, []);
+
+
+    useEffect(() => {
+
         fetchReceivedRequestsCount();
 
         const handleSocketConnect = () => {
@@ -148,7 +180,24 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                     user._id?.toString() !== currentUserId?.toString()
             );
 
-            setUsers(filteredUsers);
+            const sortedUsers = [...filteredUsers].sort((a, b) => {
+                const aIsFriend = friends.some(
+                    (friend) =>
+                        friend._id?.toString() === a._id?.toString()
+                );
+
+                const bIsFriend = friends.some(
+                    (friend) =>
+                        friend._id?.toString() === b._id?.toString()
+                );
+
+                if (aIsFriend && !bIsFriend) return -1;
+                if (!aIsFriend && bIsFriend) return 1;
+
+                return 0;
+            });
+
+            setUsers(sortedUsers);
 
         } catch (error) {
 
@@ -159,6 +208,17 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
         } finally {
             setSearching(false);
         }
+    };
+
+
+    const handleLogout = () => {
+
+        setLoggingOut(true);
+
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+
+        window.location.reload();
     };
 
 
@@ -302,7 +362,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
 
     useEffect(() => {
-        
+
         const handleSocketConnect = () => {
             setSocketConnected(true);
         };
@@ -481,154 +541,184 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
 
     return (
+        <div className="flex flex-col h-full">
 
+            <div className="p-4 sm:p-5 border-b bg-white">
 
-        <div className="p-5 border-b bg-white">
+                <div className="flex flex-col gap-3">
 
-            <div className="flex items-center justify-between ">
-
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
-                        Chats
-                    </h2>
-
-                    <p className="text-sm text-gray-400 mt-1">
-                        Your recent conversations
-                    </p>
-                </div>
-
-                <div className="relative mt-4 w-full">
-
-                    <span className="absolute top-1/2 -translate-y-1/2 left-3 text-gray-400">
-                        🔍
-                    </span>
-
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={(e) =>
-                            handleSearch(e.target.value)
-                        }
-                        placeholder="Search"
-                        className="w-full bg-gray-100 border border-transparent rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    />
-                </div>
-
-                <div
-                    onClick={() => navigate("/friend-requests")}
-                    className="mt-4 w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition"
-                >
                     <div>
-                        <p className="font-semibold text-gray-800">
-                            Friend Requests
-                        </p>
+                        <h2 className="text-2xl font-bold text-gray-900">
+                            Chats
+                        </h2>
 
-                        <p className="text-xs text-gray-400 mt-1">
-                            View your requests
+                        <p className="text-sm text-gray-400 mt-1">
+                            Your recent conversations
                         </p>
                     </div>
 
-                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
-                        {receivedRequestsCount}
+                    <div className="relative w-full">
+                        <span className="absolute top-1/2 -translate-y-1/2 left-3 text-gray-400">
+                            🔍
+                        </span>
+
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) =>
+                                handleSearch(e.target.value)
+                            }
+                            placeholder="Search"
+                            className="w-full bg-gray-100 border border-transparent rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        />
                     </div>
+
+                    <div
+                        onClick={() => navigate("/friend-requests")}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition"
+                    >
+                        <div>
+                            <p className="font-semibold text-gray-800">
+                                Friend Requests
+                            </p>
+
+                            <p className="text-xs text-gray-400 mt-1">
+                                View your requests
+                            </p>
+                        </div>
+
+                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
+                            {receivedRequestsCount}
+                        </div>
+                    </div>
+
                 </div>
-            </div>
 
-            {search && (
-                <div className="border-b max-h-60 overflow-y-auto">
+                {search && (
+                    <div className="border-b max-h-60 overflow-y-auto mt-3">
 
-                    {searching ? (
-                        <p className="p-4 text-center text-gray-500">
-                            Searching...
-                        </p>
+                        {searching ? (
+                            <p className="p-4 text-center text-gray-500">
+                                Searching...
+                            </p>
 
-                    ) : users.length === 0 ? (
-                        <p className="p-4 text-center text-gray-500">
-                            No users found
-                        </p>
+                        ) : users.length === 0 ? (
+                            <p className="p-4 text-center text-gray-500">
+                                No users found
+                            </p>
 
-                    ) : (
-                        users.map((user) => (
+                        ) : (
+                            users.map((user) => (
 
-                            <div
-                                key={user._id}
-                                className="w-full flex items-center gap-3 px-4 py-4 border-b border-gray-100 hover:bg-blue-50 transition"
-                            >
-                                <div className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
-                                    {user.name?.charAt(0).toUpperCase()}
-                                </div>
-
-                                <div className="flex-1 min-w-0">
-
-                                    <p className="font-semibold text-gray-900">
-                                        {user.name}
-                                    </p>
-
-                                    <p className="text-sm text-gray-500 truncate">
-                                        {user.email}
-                                    </p>
-
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        const isFollowed = followedUsers.some(
-                                            (id) =>
-                                                id?.toString() ===
-                                                user?._id?.toString()
-                                        );
-
-                                        const isPending = pendingRequests.some(
-                                            (id) =>
-                                                id?.toString() ===
-                                                user?._id?.toString()
-                                        );
-
-                                        if (isFollowed) {
-                                            handleFollowedUserClick(user);
-                                        } else if (isPending) {
-                                            return;
-                                        } else {
-                                            handleSendRequest(user._id);
-                                        }
-                                    }}
-                                    className={`px-3 py-2 text-xs font-semibold rounded-lg ${followedUsers.some(
-                                        (id) =>
-                                            id?.toString() ===
-                                            user?._id?.toString()
-                                    )
-                                        ? "bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer"
-                                        : pendingRequests.some(
-                                            (id) =>
-                                                id?.toString() ===
-                                                user?._id?.toString()
-                                        )
-                                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                            : "bg-blue-600 text-white hover:bg-blue-700"
-                                        }`}
+                                <div
+                                    key={user._id}
+                                    className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-gray-100 hover:bg-blue-50 transition"
                                 >
-                                    {followedUsers.some(
-                                        (id) =>
-                                            id?.toString() ===
-                                            user?._id?.toString()
-                                    )
-                                        ? "Followed"
-                                        : pendingRequests.some(
+
+                                    <div className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
+                                        {user.name?.charAt(0).toUpperCase()}
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+
+                                        <p className="font-semibold text-gray-900 truncate">
+                                            {user.name}
+                                        </p>
+
+                                        <p className="text-sm text-gray-500 truncate">
+                                            {user.email}
+                                        </p>
+
+                                    </div>
+
+                                    <button
+                                        onClick={() => {
+                                            const isFollowed =
+                                                followedUsers.some(
+                                                    (id) =>
+                                                        id?.toString() ===
+                                                        user?._id?.toString()
+                                                );
+
+                                            const isPending =
+                                                pendingRequests.some(
+                                                    (id) =>
+                                                        id?.toString() ===
+                                                        user?._id?.toString()
+                                                );
+
+                                            if (isFollowed) {
+                                                handleFollowedUserClick(user);
+                                            } else if (isPending) {
+                                                return;
+                                            } else {
+                                                handleSendRequest(user._id);
+                                            }
+                                        }}
+                                        className={`px-3 py-2 shrink-0 text-xs font-semibold rounded-lg ${followedUsers.some(
                                             (id) =>
                                                 id?.toString() ===
                                                 user?._id?.toString()
                                         )
-                                            ? "Pending"
-                                            : "Add"}
-                                </button>
-                            </div>
-                        ))
-                    )}
-                </div>
-            )}
+                                            ? "bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer"
+                                            : pendingRequests.some(
+                                                (id) =>
+                                                    id?.toString() ===
+                                                    user?._id?.toString()
+                                            )
+                                                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                                : "bg-blue-600 text-white hover:bg-blue-700"
+                                            }`}
+                                    >
+                                        {followedUsers.some(
+                                            (id) =>
+                                                id?.toString() ===
+                                                user?._id?.toString()
+                                        )
+                                            ? "Followed"
+                                            : pendingRequests.some(
+                                                (id) =>
+                                                    id?.toString() ===
+                                                    user?._id?.toString()
+                                            )
+                                                ? "Pending"
+                                                : "Add"}
+                                    </button>
+
+                                </div>
+                            ))
+                        )}
+
+                    </div>
+                )}
+
+            </div>
 
             <div className="flex-1 overflow-y-auto">
 
+                <button
+                    type="button"
+                    onClick={() => navigate("/friends")}
+                    className="w-full px-4 sm:px-5 py-4 bg-white border-b flex items-center justify-between text-left hover:bg-blue-50 transition"
+                >
+                    <div>
+                        <p className="text-sm font-semibold text-gray-700">
+                            Friends
+                        </p>
+
+                        <p className="text-xs text-gray-400 mt-1">
+                            View all your friends
+                        </p>
+                    </div>
+
+                    <span className="text-gray-400 text-lg">
+                        👥
+                    </span>
+                </button>
+
+
                 {loading ? (
+
                     <p className="p-4 text-gray-500">
                         Loading chats...
                     </p>
@@ -652,6 +742,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                     </div>
 
                 ) : (
+
                     conversations.map((conversation) => {
 
                         const currentUserId =
@@ -659,18 +750,23 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
                         const otherUser =
                             conversation.participants?.find((user) => {
-                                const userId = user?._id || user;
+
+                                const userId =
+                                    user?._id || user;
 
                                 return (
                                     userId?.toString() !==
                                     currentUserId?.toString()
                                 );
+
                             });
+
                         return (
 
                             <button
                                 key={conversation._id}
                                 onClick={() => {
+
                                     onSelectConversation(conversation);
 
                                     setConversations((prev) =>
@@ -683,13 +779,14 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                                 : item
                                         )
                                     );
+
                                 }}
-                                className="w-full text-left p-4 border-b hover:bg-gray-100 hover:bg-gray-50 transition"
+                                className="w-full flex items-center gap-3 text-left p-3 sm:p-4 border-b hover:bg-gray-50 transition"
                             >
 
-                                <div className="relative">
+                                <div className="relative shrink-0">
 
-                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
+                                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
 
                                         {otherUser?.name
                                             ?.charAt(0)
@@ -710,19 +807,20 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
                                 </div>
 
+
                                 <div className="flex-1 min-w-0 text-left">
 
                                     <div className="flex justify-between items-center">
 
                                         <p className="font-semibold text-gray-900 truncate">
-
                                             {otherUser?.name ||
                                                 "Unknown User"}
-
                                         </p>
 
                                         {conversation.lastMessage && (
-                                            <span className="text-[10px] text-gray-400 ml-2">
+
+                                            <span className="text-[10px] text-gray-400 ml-2 shrink-0">
+
                                                 {new Date(
                                                     conversation.lastMessage.createdAt
                                                 ).toLocaleTimeString(
@@ -732,14 +830,17 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                                         minute: "2-digit",
                                                     }
                                                 )}
+
                                             </span>
+
                                         )}
 
                                     </div>
 
+
                                     <div className="flex justify-between items-center">
 
-                                        <p className="text-sm text-gray-500 truncate max-w-[210px]">
+                                        <p className="text-sm text-gray-500 truncate max-w-[160px] sm:max-w-[210px]">
 
                                             {conversation.lastMessage
                                                 ?.text ||
@@ -749,7 +850,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
                                         {conversation.unreadCount > 0 && (
 
-                                            <span className="ml-2 min-w-5 h-5 px-1.5 bg-blue-600 text-white text-xs rounded-full flex items-center justify-center">
+                                            <span className="ml-2 min-w-5 h-5 px-1.5 bg-blue-600 text-white text-xs rounded-full flex items-center justify-center shrink-0">
 
                                                 {conversation.unreadCount}
 
@@ -771,15 +872,16 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
             </div>
 
-            <div className="p-4 border-t bg-gray-50">
+
+            <div className="p-3 sm:p-4 border-t bg-gray-50">
 
                 <div className="flex items-center gap-3">
 
-                    <div className="w-10 h-10 rounded-full bg-gray-800 text-white flex items-center justify-center font-bold">
+                    <div className="w-10 h-10 shrink-0 rounded-full bg-gray-800 text-white flex items-center justify-center font-bold">
                         U
                     </div>
 
-                    <div>
+                    <div className="min-w-0">
 
                         <p className="font-semibold text-sm">
                             My Account
@@ -791,15 +893,40 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                 : "text-gray-500"
                                 }`}
                         >
-                            {socketConnected ? "● Online" : "● Offline"}
+                            {socketConnected
+                                ? "● Online"
+                                : "● Offline"}
                         </p>
+
                     </div>
 
                 </div>
 
             </div>
 
+            <div className="p-3 sm:p-4 bg-white border-t">
+                <button
+                    type="button"
+                    onClick={handleLogout}
+                    disabled={loggingOut}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200 font-semibold transition text-sm sm:text-base"
+                >
+                    {loggingOut ? (
+                        <>
+                            <div className="w-5 h-5 border-2 border-red-200 border-t-red-600 rounded-full animate-spin"></div>
+                            <span>Logging out...</span>
+                        </>
+                    ) : (
+                        <>
+                            <span className="text-lg">↪</span>
+                            <span>Logout</span>
+                        </>
+                    )}
+                </button>
+            </div>
+
         </div>
     );
 }
+
 export default ChatSidebar;

@@ -3,7 +3,6 @@ import User from "../models/User.js";
 import Conversation from "../models/Conversation.js";
 import { getIO } from "../socket/socket.js";
 
-
 export const getSentRequests = async (req, res) => {
 
     try {
@@ -244,6 +243,58 @@ export const rejectFriendRequest = async (req, res) => {
     } catch (error) {
         console.error(
             "Reject Friend Request Error:",
+            error.message
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};
+
+
+export const getFriends = async (req, res) => {
+    try {
+        const requests = await FriendRequest.find({
+            $or: [
+                {
+                    sender: req.user._id,
+                    status: "accepted",
+                },
+                {
+                    receiver: req.user._id,
+                    status: "accepted",
+                },
+            ],
+        })
+            .populate(
+                "sender",
+                "name email profileImage"
+            )
+            .populate(
+                "receiver",
+                "name email profileImage"
+            );
+
+        const friends = requests.map((request) => {
+            if (
+                request.sender._id.toString() ===
+                req.user._id.toString()
+            ) {
+                return request.receiver;
+            }
+
+            return request.sender;
+        });
+
+        res.status(200).json({
+            success: true,
+            friends,
+        });
+    } catch (error) {
+        console.error(
+            "Get Friends Error:",
             error.message
         );
 

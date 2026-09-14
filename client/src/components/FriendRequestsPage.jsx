@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const FriendRequestsPage = () => {
-    
+
+    const navigate = useNavigate();
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
@@ -99,9 +101,13 @@ const FriendRequestsPage = () => {
     if (loading) {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-                <p className="text-gray-500">
-                    Loading requests...
-                </p>
+                <div className="flex flex-col items-center justify-center py-16">
+                    <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+
+                    <p className="text-sm text-gray-500 mt-3">
+                        Loading requests...
+                    </p>
+                </div>
             </div>
         );
     }
@@ -110,6 +116,15 @@ const FriendRequestsPage = () => {
         <div className="min-h-screen bg-slate-50 p-6">
 
             <div className="max-w-3xl mx-auto">
+
+                <button
+                    type="button"
+                    onClick={() => navigate("/chat")}
+                    className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-800 transition shrink-0"
+                    title="Back to chats"
+                >
+                    ❮
+                </button>
 
                 <h1 className="text-3xl font-bold text-gray-900 mb-6">
                     Friend Requests

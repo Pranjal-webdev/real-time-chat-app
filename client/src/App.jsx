@@ -6,6 +6,7 @@ import Chat from "./pages/Chat";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import FriendRequestsPage from "./components/FriendRequestsPage";
+import FriendsPage from "./components/FriendsPage";
 
 function App() {
 
@@ -33,72 +34,56 @@ function App() {
             }
         };
 
-        const handleDisconnect = () => {
-            console.log("Socket disconnected");
-        };
-
-        // FIRST listeners
         socket.on("connect", handleConnect);
-        socket.on("disconnect", handleDisconnect);
 
-        // THEN connect
         socket.connect();
 
-        // If already connected
         if (socket.connected) {
             handleConnect();
         }
 
         return () => {
             socket.off("connect", handleConnect);
-            socket.off("disconnect", handleDisconnect);
             socket.disconnect();
         };
-
     }, [isAuthenticated]);
-
-    if (!isAuthenticated) {
-
-        if (showRegister) {
-            return (
-                <Register
-                    onLogin={() => setShowRegister(false)}
-                    onRegisterSuccess={() => setShowRegister(false)}
-                />
-            );
-        }
-
-        return (
-            <Login
-                onRegister={() => setShowRegister(true)}
-                onLoginSuccess={() => setIsAuthenticated(true)}
-            />
-        );
-    }
-
 
     return (
         <BrowserRouter>
+            {!isAuthenticated ? (
+                showRegister ? (
+                    <Register
+                        onLogin={() => setShowRegister(false)}
+                        onRegisterSuccess={() => {
+                            setIsAuthenticated(true);
+                        }}
+                    />
+                ) : (
+                    <Login
+                        onRegister={() => setShowRegister(true)}
+                        onLoginSuccess={() => {
+                            setIsAuthenticated(true);
+                        }}
+                    />
+                )
+            ) : (
+                <Routes>
+                    <Route path="/chat" element={<Chat />} />
 
-            <Routes>
+                    <Route path="/friends" element={<FriendsPage />} />
 
-                <Route
-                    path="/chat"
-                    element={<Chat />}
-                />
+                    <Route
+                        path="/friend-requests"
+                        element={<FriendRequestsPage />}
+                    />
 
-                <Route
-                    path="/friend-requests"
-                    element={<FriendRequestsPage />}
-                />
-
-                <Route
-                    path="*"
-                    element={<Navigate to="/chat" />}
-                />
-
-            </Routes>
-
+                    <Route
+                        path="*"
+                        element={<Navigate to="/chat" replace />}
+                    />
+                    
+                </Routes>
+            )}
         </BrowserRouter>
     );
 }

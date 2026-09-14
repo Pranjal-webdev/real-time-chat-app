@@ -29,7 +29,13 @@ const Register = ({ onLogin, onRegisterSuccess }) => {
 
             console.log("Register Response:", response.data);
 
-            setSuccess("Account created successfully! Please login.");
+            const { token, user } = response.data;
+
+            localStorage.setItem("token", token);
+            localStorage.setItem(
+                "userId",
+                user._id || user.id
+            );
 
             onRegisterSuccess();
 
