@@ -32,10 +32,9 @@ const Register = ({ onLogin, onRegisterSuccess }) => {
             const { token, user } = response.data;
 
             localStorage.setItem("token", token);
-            localStorage.setItem(
-                "userId",
-                user._id || user.id
-            );
+            localStorage.setItem("userId", user._id || user.id);
+            localStorage.setItem("userName", user.name);
+            localStorage.setItem("profileImage", user.profileImage || "");
 
             onRegisterSuccess();
 

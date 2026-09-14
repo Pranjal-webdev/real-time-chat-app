@@ -477,10 +477,9 @@ const ChatWindow = ({ conversation, onBack }) => {
                 });
 
 
-                setTimeout(() => {
-                    loadAttachment(message, true);
-                }, 100);
-
+                
+                loadAttachment(message, true);
+                
                 return;
             }
 

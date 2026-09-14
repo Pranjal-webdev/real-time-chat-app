@@ -30,15 +30,13 @@ const Login = ({ onRegister, onLoginSuccess }) => {
 
             const { token, user } = response.data;
 
-            localStorage.setItem("token", token);
             console.log("LOGIN USER:", user);
-            console.log("LOGIN USER ID:", user._id);
-            console.log("LOGIN USER ID 2:", user.id);
 
-            localStorage.setItem(
-                "userId",
-                user._id || user.id
-            );
+            localStorage.setItem("token", token);
+            localStorage.setItem("userId", user._id || user.id);
+            localStorage.setItem("userName", user.name);
+            localStorage.setItem("profileImage", user.profileImage || "");
+
             onLoginSuccess();
 
         } catch (error) {

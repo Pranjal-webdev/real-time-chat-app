@@ -43,3 +43,36 @@ export const searchUsers = async (req, res) => {
         });
     }
 };
+
+
+export const updateProfileImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "Profile image is required",
+            });
+        }
+
+        const profileImage = `/uploads/${req.file.filename}`;
+
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            { profileImage },
+            { new: true }
+        ).select("_id name email profileImage");
+
+        res.status(200).json({
+            success: true,
+            message: "Profile image updated successfully",
+            user,
+        });
+    } catch (error) {
+        console.error("Update Profile Image Error:", error.message);
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};

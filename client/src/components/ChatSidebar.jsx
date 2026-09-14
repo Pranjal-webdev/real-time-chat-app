@@ -20,6 +20,51 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
     const [socketConnected, setSocketConnected] = useState(socket.connected);
     const [friends, setFriends] = useState([]);
     const [loggingOut, setLoggingOut] = useState(false);
+    const [profileImage, setProfileImage] = useState(
+        localStorage.getItem("profileImage") || ""
+    );
+    const [uploadingProfile, setUploadingProfile] = useState(false);
+
+
+    const handleProfileImageChange = async (event) => {
+
+        const file = event.target.files[0];
+
+        if (!file) return;
+
+        try {
+            setUploadingProfile(true);
+
+            const token = localStorage.getItem("token");
+
+            const formData = new FormData();
+            formData.append("profileImage", file);
+
+            const response = await axios.put(
+                "http://localhost:5001/api/users/profile-image",
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            const image = response.data.user.profileImage;
+
+            setProfileImage(image);
+            localStorage.setItem("profileImage", image);
+
+        } catch (error) {
+            console.error(
+                "Profile Image Upload Error:",
+                error.response?.data || error.message
+            );
+        } finally {
+            setUploadingProfile(false);
+            event.target.value = "";
+        }
+    };
 
 
     const fetchReceivedRequestsCount = async () => {
@@ -217,6 +262,9 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
         localStorage.removeItem("token");
         localStorage.removeItem("userId");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("profileImage");
+
 
         window.location.reload();
     };
@@ -555,6 +603,58 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                         <p className="text-sm text-gray-400 mt-1">
                             Your recent conversations
                         </p>
+
+                        <div className="flex items-center gap-3 mt-3">
+                            <label className="relative cursor-pointer">
+                                {uploadingProfile ? (
+                                    <div className="w-12 h-12 rounded-full bg-gray-100 border-2 border-blue-200 flex items-center justify-center">
+                                        <div className="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                                    </div>
+                                ) : profileImage ? (
+                                    <img
+                                        src={
+                                            profileImage.startsWith("http")
+                                                ? profileImage
+                                                : `http://localhost:5001${profileImage}`
+                                        }
+                                        alt="Profile"
+                                        className="w-12 h-12 rounded-full object-cover border-2 border-blue-500"
+                                    />
+                                ) : (
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
+                                        {localStorage.getItem("userName")
+                                            ?.charAt(0)
+                                            .toUpperCase() || "U"}
+                                    </div>
+                                )}
+
+                                {!uploadingProfile && (
+                                    <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs border-2 border-white">
+                                        ✎
+                                    </div>
+                                )}
+
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleProfileImageChange}
+                                    className="hidden"
+                                    disabled={uploadingProfile}
+                                />
+                            </label>
+
+                            <div className="min-w-0">
+                                <p className="font-semibold text-gray-900 truncate">
+                                    {localStorage.getItem("userName")}
+                                </p>
+
+                                <p className="text-xs text-gray-500">
+                                    {uploadingProfile
+                                        ? "Uploading..."
+                                        : "Change profile picture"}
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="relative w-full">
@@ -614,10 +714,23 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                     key={user._id}
                                     className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-gray-100 hover:bg-blue-50 transition"
                                 >
+                                    {user.profileImage ? (
+                                        <img
+                                            src={
+                                                user.profileImage.startsWith("http")
+                                                    ? user.profileImage
+                                                    : `http://localhost:5001${user.profileImage}`
+                                            }
+                                            alt={user.name}
+                                            className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-full object-cover border border-gray-200"
+                                        />
+                                    ) : (
 
-                                    <div className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
-                                        {user.name?.charAt(0).toUpperCase()}
-                                    </div>
+                                        <div className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
+                                            {user.name?.charAt(0).toUpperCase() || "U"}
+                                        </div>
+                                    )}
+
 
                                     <div className="flex-1 min-w-0">
 
@@ -786,13 +899,21 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
                                 <div className="relative shrink-0">
 
-                                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
-
-                                        {otherUser?.name
-                                            ?.charAt(0)
-                                            .toUpperCase() || "U"}
-
-                                    </div>
+                                    {otherUser?.profileImage ? (
+                                        <img
+                                            src={
+                                                otherUser.profileImage.startsWith("http")
+                                                    ? otherUser.profileImage
+                                                    : `http://localhost:5001${otherUser.profileImage}`
+                                            }
+                                            alt={otherUser.name}
+                                            className="w-12 h-12 shrink-0 rounded-full object-cover border border-gray-200"
+                                        />
+                                    ) : (
+                                        <div className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
+                                            {otherUser?.name?.charAt(0).toUpperCase() || "U"}
+                                        </div>
+                                    )}
 
                                     <span
                                         className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${onlineUsers.some(
