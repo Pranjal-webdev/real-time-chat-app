@@ -21,7 +21,7 @@ const Login = ({ onRegister, onLoginSuccess }) => {
             localStorage.removeItem("userId");
 
             const response = await axios.post(
-                "http://https://real-time-chat-app-backend-1qh4.onrender.com/api/auth/login",
+                "https://real-time-chat-app-backend-1qh4.onrender.com://real-time-chat-app-backend-1qh4.onrender.com/api/auth/login",
                 {
                     email,
                     password,

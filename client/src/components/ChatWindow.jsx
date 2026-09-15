@@ -53,7 +53,7 @@ const ChatWindow = ({ conversation, onBack }) => {
 
         try {
             const requestUrl =
-                `http://https://real-time-chat-app-backend-1qh4.onrender.com${message.fileUrl}`;
+                `https://real-time-chat-app-backend-1qh4.onrender.com://real-time-chat-app-backend-1qh4.onrender.com${message.fileUrl}`;
 
             const cache = await getAttachmentCache();
 
@@ -164,7 +164,7 @@ const ChatWindow = ({ conversation, onBack }) => {
             const token = localStorage.getItem("token");
 
             await axios.delete(
-                `http://https://real-time-chat-app-backend-1qh4.onrender.com/api/messages/${messageId}`,
+                `https://real-time-chat-app-backend-1qh4.onrender.com://real-time-chat-app-backend-1qh4.onrender.com/api/messages/${messageId}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -200,7 +200,7 @@ const ChatWindow = ({ conversation, onBack }) => {
             const token = localStorage.getItem("token");
 
             const response = await axios.put(
-                `http://https://real-time-chat-app-backend-1qh4.onrender.com/api/messages/${message._id}`,
+                `https://real-time-chat-app-backend-1qh4.onrender.com://real-time-chat-app-backend-1qh4.onrender.com/api/messages/${message._id}`,
                 {
                     text: newText.trim(),
                 },
@@ -240,7 +240,7 @@ const ChatWindow = ({ conversation, onBack }) => {
             const token = localStorage.getItem("token");
 
             const response = await axios.put(
-                `http://https://real-time-chat-app-backend-1qh4.onrender.com/api/messages/${messageId}/reaction`,
+                `https://real-time-chat-app-backend-1qh4.onrender.com://real-time-chat-app-backend-1qh4.onrender.com/api/messages/${messageId}/reaction`,
                 { emoji },
                 {
                     headers: {
@@ -320,7 +320,7 @@ const ChatWindow = ({ conversation, onBack }) => {
                 const token = localStorage.getItem("token");
 
                 const response = await axios.get(
-                    `http://https://real-time-chat-app-backend-1qh4.onrender.com/api/messages/${conversation._id}`,
+                    `https://real-time-chat-app-backend-1qh4.onrender.com://real-time-chat-app-backend-1qh4.onrender.com/api/messages/${conversation._id}`,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -751,7 +751,7 @@ const ChatWindow = ({ conversation, onBack }) => {
                                                             />
                                                         ) : isMine ? (
                                                             <img
-                                                                src={`http://https://real-time-chat-app-backend-1qh4.onrender.com${message.fileUrl}`}
+                                                                src={`https://real-time-chat-app-backend-1qh4.onrender.com://real-time-chat-app-backend-1qh4.onrender.com${message.fileUrl}`}
                                                                 alt={message.fileName || "Image"}
                                                                 className="w-48 h-48 object-contain rounded-lg"
                                                             />
@@ -803,7 +803,7 @@ const ChatWindow = ({ conversation, onBack }) => {
                                                             </a>
                                                         ) : isMine ? (
                                                             <a
-                                                                href={`http://https://real-time-chat-app-backend-1qh4.onrender.com${message.fileUrl}`}
+                                                                href={`https://real-time-chat-app-backend-1qh4.onrender.com://real-time-chat-app-backend-1qh4.onrender.com${message.fileUrl}`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 className="flex items-center gap-3 w-fit max-w-[220px] underline"
