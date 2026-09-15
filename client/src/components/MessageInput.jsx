@@ -41,7 +41,7 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply, o
             formData.append("file", file);
 
             const response = await axios.post(
-                "https://real-time-chat-app-backend-1qh4.onrender.com://real-time-chat-app-backend-1qh4.onrender.com/api/messages/upload",
+                "https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/messages/upload",
                 formData,
                 {
                     headers: {
@@ -83,7 +83,7 @@ const MessageInput = ({ conversationId, onMessageSent, replyTo, onCancelReply, o
             const token = localStorage.getItem("token");
 
             const response = await axios.post(
-                "https://real-time-chat-app-backend-1qh4.onrender.com://real-time-chat-app-backend-1qh4.onrender.com/api/messages",
+                "https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/messages",
                 {
                     conversationId,
                     text: message.trim(),
