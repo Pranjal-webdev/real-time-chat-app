@@ -1,4 +1,7 @@
 import { Server } from "socket.io";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+import Conversation from "../models/Conversation.js";
 
 let io;
 
@@ -15,73 +18,224 @@ export const initializeSocket = (server) => {
         },
     });
 
+    io.use((socket, next) => {
+        try {
+            const token = socket.handshake.auth?.token;
+
+            if (!token) {
+                return next(new Error("Authentication required"));
+            }
+
+            const decoded = jwt.verify(
+                token,
+                process.env.JWT_SECRET
+            );
+
+            socket.userId = decoded.userId;
+
+            next();
+
+        } catch (error) {
+            console.error("Socket Auth Error:", error.message);
+            next(new Error("Invalid or expired token"));
+        }
+    });
+
     io.on("connection", (socket) => {
         console.log("User connected:", socket.id);
 
-        socket.on("joinConversation", ({ conversationId, userId }) => {
+        socket.on("joinConversation", async ({ conversationId }) => {
 
-            socket.join(`conversation:${conversationId}`);
+            try {
+                if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+                    return socket.emit("socketError", {
+                        message: "Invalid conversation ID",
+                    });
+                }
 
-            onlineUsers.set(
-                userId.toString(),
-                socket.id
-            );
+                const conversation = await Conversation.findById(
+                    conversationId
+                ).select("participants");
 
-            socket.join(userId.toString());
+                if (!conversation) {
+                    return socket.emit("socketError", {
+                        message: "Conversation not found",
+                    });
+                }
 
-            socket.emit("onlineUsers", {
-                userIds: [...onlineUsers.keys()],
-            });
+                const isParticipant = conversation.participants.some(
+                    (participant) =>
+                        participant.toString() ===
+                        socket.userId.toString()
+                );
 
-            socket.to(
-                `conversation:${conversationId}`
-            ).emit("userOnline", {
-                userId,
-            });
+                if (!isParticipant) {
+                    return socket.emit("socketError", {
+                        message: "You are not a participant of this conversation",
+                    });
+                }
 
-            console.log(
-                `${socket.id} joined conversation:${conversationId}`
-            );
-        });
+                const userId = socket.userId.toString();
 
-        socket.on("markMessagesRead", ({ conversationId, userId }) => {
-            socket
-                .to(`conversation:${conversationId}`)
-                .emit("messagesRead", {
-                    conversationId,
+                socket.join(`conversation:${conversationId}`);
+
+                onlineUsers.set(userId, socket.id);
+
+                socket.join(userId);
+
+                socket.emit("onlineUsers", {
+                    userIds: [...onlineUsers.keys()],
+                });
+
+                socket.to(
+                    `conversation:${conversationId}`
+                ).emit("userOnline", {
                     userId,
                 });
+
+                console.log(
+                    `${socket.id} joined conversation:${conversationId}`
+                );
+
+            } catch (error) {
+                console.error(
+                    "Join Conversation Error:",
+                    error.message
+                );
+
+                socket.emit("socketError", {
+                    message: "Unable to join conversation",
+                });
+            }
         });
 
-        socket.on("editMessage", ({ conversationId, message }) => {
-            io.to(`conversation:${conversationId}`).emit(
-                "messageEdited",
-                message
-            );
+        socket.on("markMessagesRead", async ({ conversationId }) => {
+            try {
+                if (!mongoose.Types.ObjectId.isValid(conversationId)) return;
+
+                const conversation = await Conversation.findById(conversationId)
+                    .select("participants");
+
+                if (!conversation) return;
+
+                const isParticipant = conversation.participants.some(
+                    (participant) =>
+                        participant.toString() === socket.userId.toString()
+                );
+
+                if (!isParticipant) return;
+
+                socket.to(`conversation:${conversationId}`).emit(
+                    "messagesRead",
+                    {
+                        conversationId,
+                        userId: socket.userId,
+                    }
+                );
+            } catch (error) {
+                console.error("Mark Read Socket Error:", error.message);
+            }
         });
 
-        socket.on("deleteMessage", ({ conversationId, messageId }) => {
-            io.to(`conversation:${conversationId}`).emit(
-                "messageDeleted",
-                { messageId }
-            );
+        socket.on("editMessage", async ({ conversationId, message }) => {
+            try {
+                if (!mongoose.Types.ObjectId.isValid(conversationId)) return;
+
+                const conversation = await Conversation.findById(conversationId)
+                    .select("participants");
+
+                if (!conversation) return;
+
+                const isParticipant = conversation.participants.some(
+                    (participant) =>
+                        participant.toString() === socket.userId.toString()
+                );
+
+                if (!isParticipant) return;
+
+                io.to(`conversation:${conversationId}`).emit(
+                    "messageEdited",
+                    message
+                );
+
+            } catch (error) {
+                console.error("Edit Message Socket Error:", error.message);
+            }
         });
 
-        socket.on("typing", (conversationId) => {
-            socket
-                .to(`conversation:${conversationId}`)
-                .emit("typing");
+        socket.on("deleteMessage", async ({ conversationId, messageId }) => {
+            try {
+                if (!mongoose.Types.ObjectId.isValid(conversationId)) return;
+
+                const conversation = await Conversation.findById(conversationId)
+                    .select("participants");
+
+                if (!conversation) return;
+
+                const isParticipant = conversation.participants.some(
+                    (participant) =>
+                        participant.toString() === socket.userId.toString()
+                );
+
+                if (!isParticipant) return;
+
+                io.to(`conversation:${conversationId}`).emit(
+                    "messageDeleted",
+                    { messageId }
+                );
+
+            } catch (error) {
+                console.error("Delete Message Socket Error:", error.message);
+            }
         });
 
-        socket.on("stopTyping", (conversationId) => {
-            socket
-                .to(`conversation:${conversationId}`)
-                .emit("stopTyping");
+        socket.on("typing", async (conversationId) => {
+            try {
+                if (!mongoose.Types.ObjectId.isValid(conversationId)) return;
+
+                const conversation = await Conversation.findById(conversationId)
+                    .select("participants");
+
+                if (!conversation) return;
+
+                const isParticipant = conversation.participants.some(
+                    (participant) =>
+                        participant.toString() === socket.userId.toString()
+                );
+
+                if (!isParticipant) return;
+
+                socket.to(`conversation:${conversationId}`).emit("typing");
+            } catch (error) {
+                console.error("Typing Socket Error:", error.message);
+            }
+        });
+
+        socket.on("stopTyping", async (conversationId) => {
+            try {
+                if (!mongoose.Types.ObjectId.isValid(conversationId)) return;
+
+                const conversation = await Conversation.findById(conversationId)
+                    .select("participants");
+
+                if (!conversation) return;
+
+                const isParticipant = conversation.participants.some(
+                    (participant) =>
+                        participant.toString() === socket.userId.toString()
+                );
+
+                if (!isParticipant) return;
+
+                socket.to(`conversation:${conversationId}`).emit("stopTyping");
+            } catch (error) {
+                console.error("Stop Typing Socket Error:", error.message);
+            }
         });
 
         socket.on("userOnline", (userId) => {
 
-            const userIdString = userId.toString();
+            const userIdString = socket.userId.toString();
 
             onlineUsers.set(userIdString, socket.id);
 
@@ -99,6 +253,11 @@ export const initializeSocket = (server) => {
         });
 
         socket.on("checkUserOnline", (userId) => {
+
+            if (!userId) {
+                return;
+            }
+
             const userIdString = userId.toString();
             const isOnline = onlineUsers.has(userIdString);
 
@@ -115,13 +274,31 @@ export const initializeSocket = (server) => {
             });
         });
 
-        socket.on("attachmentSent", ({ conversationId, message }) => {
-            console.log("ATTACHMENT RELEASED:", message?._id);
+        socket.on("attachmentSent", async ({ conversationId, message }) => {
+            try {
+                if (!mongoose.Types.ObjectId.isValid(conversationId)) return;
 
-            io.to(`conversation:${conversationId}`).emit(
-                "newMessage",
-                message
-            );
+                const conversation = await Conversation.findById(conversationId)
+                    .select("participants");
+
+                if (!conversation) return;
+
+                const isParticipant = conversation.participants.some(
+                    (participant) =>
+                        participant.toString() === socket.userId.toString()
+                );
+
+                if (!isParticipant) return;
+
+                console.log("ATTACHMENT RELEASED:", message?._id);
+
+                io.to(`conversation:${conversationId}`).emit(
+                    "newMessage",
+                    message
+                );
+            } catch (error) {
+                console.error("Attachment Socket Error:", error.message);
+            }
         });
 
         socket.on("disconnect", () => {
@@ -139,8 +316,6 @@ export const initializeSocket = (server) => {
                 }
             }
         });
-
-        return io;
     });
 };
 

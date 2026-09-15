@@ -1,14 +1,22 @@
 import Conversation from "../models/Conversation.js";
 import User from "../models/User.js";
 import Message from "../models/Message.js";
+import mongoose from "mongoose";
 
 export const createConversation = async (req, res) => {
 
     try {
-        
+
         const { userId } = req.body;
         console.log("BACKEND CURRENT USER:", req.user._id.toString());
         console.log("FRONTEND REQUESTED USER:", userId);
+
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid user ID",
+            });
+        }
 
         if (!userId) {
             return res.status(400).json({
@@ -37,6 +45,7 @@ export const createConversation = async (req, res) => {
         let conversation = await Conversation.findOne({
             participants: {
                 $all: [req.user._id, userId],
+                $size: 2,
             },
         });
 

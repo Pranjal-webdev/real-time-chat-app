@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Message from "../models/Message.js";
 import Conversation from "../models/Conversation.js";
 import { getIO } from "../socket/socket.js";
@@ -12,6 +13,13 @@ export const sendMessage = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "Conversation ID and message text are required",
+            });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid conversation ID",
             });
         }
 
@@ -51,16 +59,9 @@ export const sendMessage = async (req, res) => {
             conversationId,
             {
                 lastMessage: message._id,
-            },
-            {
-                new: true,
+                lastMessageAt: message.createdAt,
             }
         );
-
-        conversation.lastMessage = message._id;
-        conversation.lastMessageAt = message.createdAt;
-
-        await conversation.save();
 
         const populatedMessage = await Message.findById(message._id)
             .populate("sender", "name email profileImage")
@@ -101,6 +102,13 @@ export const getMessages = async (req, res) => {
 
     try {
         const { conversationId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid conversation ID",
+            });
+        }
 
         const conversation = await Conversation.findById(conversationId);
 
@@ -182,12 +190,40 @@ export const deleteMessage = async (req, res) => {
     try {
         const { messageId } = req.params;
 
+        if (!mongoose.Types.ObjectId.isValid(messageId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid message ID",
+            });
+        }
+
         const message = await Message.findById(messageId);
 
         if (!message) {
             return res.status(404).json({
                 success: false,
                 message: "Message not found",
+            });
+        }
+
+        const conversation = await Conversation.findById(message.conversation);
+
+        if (!conversation) {
+            return res.status(404).json({
+                success: false,
+                message: "Conversation not found",
+            });
+        }
+
+        const isParticipant = conversation.participants.some(
+            (participant) =>
+                participant.toString() === req.user._id.toString()
+        );
+
+        if (!isParticipant) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not a participant of this conversation",
             });
         }
 
@@ -219,6 +255,14 @@ export const deleteMessage = async (req, res) => {
 export const editMessage = async (req, res) => {
     try {
         const { messageId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(messageId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid message ID",
+            });
+        }
+
         const { text } = req.body;
 
         if (!text || !text.trim()) {
@@ -236,6 +280,28 @@ export const editMessage = async (req, res) => {
                 message: "Message not found",
             });
         }
+
+        const conversation = await Conversation.findById(message.conversation);
+
+        if (!conversation) {
+            return res.status(404).json({
+                success: false,
+                message: "Conversation not found",
+            });
+        }
+
+        const isParticipant = conversation.participants.some(
+            (participant) =>
+                participant.toString() === req.user._id.toString()
+        );
+
+        if (!isParticipant) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not a participant of this conversation",
+            });
+        }
+
 
         if (message.sender.toString() !== req.user._id.toString()) {
             return res.status(403).json({
@@ -277,10 +343,38 @@ export const uploadMessage = async (req, res) => {
             });
         }
 
+        if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid conversation ID",
+            });
+        }
+
         if (!req.file) {
             return res.status(400).json({
                 success: false,
                 message: "File is required",
+            });
+        }
+
+        const conversation = await Conversation.findById(conversationId);
+
+        if (!conversation) {
+            return res.status(404).json({
+                success: false,
+                message: "Conversation not found",
+            });
+        }
+
+        const isParticipant = conversation.participants.some(
+            (participant) =>
+                participant.toString() === req.user._id.toString()
+        );
+
+        if (!isParticipant) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not a participant of this conversation",
             });
         }
 
@@ -343,6 +437,13 @@ export const reactToMessage = async (req, res) => {
         const { emoji } = req.body;
         const { messageId } = req.params;
 
+        if (!mongoose.Types.ObjectId.isValid(messageId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid message ID",
+            });
+        }
+
         if (!emoji) {
             return res.status(400).json({
                 success: false,
@@ -351,6 +452,27 @@ export const reactToMessage = async (req, res) => {
         }
 
         const message = await Message.findById(messageId);
+
+        const conversation = await Conversation.findById(message.conversation);
+
+        if (!conversation) {
+            return res.status(404).json({
+                success: false,
+                message: "Conversation not found",
+            });
+        }
+
+        const isParticipant = conversation.participants.some(
+            (participant) =>
+                participant.toString() === req.user._id.toString()
+        );
+
+        if (!isParticipant) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not a participant of this conversation",
+            });
+        }
 
         if (!message) {
             return res.status(404).json({

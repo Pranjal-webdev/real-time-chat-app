@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import FriendRequest from "../models/FriendRequest.js";
 import User from "../models/User.js";
 import Conversation from "../models/Conversation.js";
@@ -39,6 +40,13 @@ export const sendFriendRequest = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "User ID is required",
+            });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid user ID",
             });
         }
 
@@ -143,6 +151,13 @@ export const acceptFriendRequest = async (req, res) => {
     try {
         const { requestId } = req.params;
 
+        if (!mongoose.Types.ObjectId.isValid(requestId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid request ID",
+            });
+        }
+
         const request = await FriendRequest.findOne({
             _id: requestId,
             receiver: req.user._id,
@@ -171,6 +186,7 @@ export const acceptFriendRequest = async (req, res) => {
                     request.sender,
                     request.receiver,
                 ],
+                $size: 2,
             },
         });
 
@@ -219,6 +235,13 @@ export const acceptFriendRequest = async (req, res) => {
 export const rejectFriendRequest = async (req, res) => {
     try {
         const { requestId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(requestId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid request ID",
+            });
+        }
 
         const request = await FriendRequest.findOne({
             _id: requestId,
