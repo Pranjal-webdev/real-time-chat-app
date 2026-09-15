@@ -41,7 +41,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
             formData.append("profileImage", file);
 
             const response = await axios.put(
-                "https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/users/profile-image",
+                "https://real-time-chat-app-backend-1qh4.onrender.com/api/users/profile-image",
                 formData,
                 {
                     headers: {
@@ -72,7 +72,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
             const token = localStorage.getItem("token");
 
             const response = await axios.get(
-                "https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/received",
+                "https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/received",
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -100,7 +100,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                 const token = localStorage.getItem("token");
 
                 const response = await axios.get(
-                    "https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/friends",
+                    "https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/friends",
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -148,7 +148,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
             const token = localStorage.getItem("token");
 
             const response = await axios.get(
-                "https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/sent",
+                "https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/sent",
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -210,7 +210,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
             const token = localStorage.getItem("token");
 
             const response = await axios.get(
-                `https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/users/search?search=${value}`,
+                `https://real-time-chat-app-backend-1qh4.onrender.com/api/users/search?search=${value}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -278,7 +278,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
             const token = localStorage.getItem("token");
 
             await axios.post(
-                "https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests",
+                "https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests",
 
                 { userId: userId },
 
@@ -354,7 +354,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                 const token = localStorage.getItem("token");
 
                 const response = await axios.post(
-                    "https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/conversations",
+                    "https://real-time-chat-app-backend-1qh4.onrender.com/api/conversations",
                     {
                         userId: user._id,
                     },
@@ -438,7 +438,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
 
                 const response = await axios.get(
 
-                    "https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/conversations",
+                    "https://real-time-chat-app-backend-1qh4.onrender.com/api/conversations",
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -615,7 +615,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                         src={
                                             profileImage.startsWith("http")
                                                 ? profileImage
-                                                : `https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com${profileImage}`
+                                                : `https://real-time-chat-app-backend-1qh4.onrender.com${profileImage}`
                                         }
                                         alt="Profile"
                                         className="w-12 h-12 rounded-full object-cover border-2 border-blue-500"
@@ -719,7 +719,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                             src={
                                                 user.profileImage.startsWith("http")
                                                     ? user.profileImage
-                                                    : `https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com${user.profileImage}`
+                                                    : `https://real-time-chat-app-backend-1qh4.onrender.com${user.profileImage}`
                                             }
                                             alt={user.name}
                                             className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-full object-cover border border-gray-200"
@@ -904,7 +904,7 @@ const ChatSidebar = ({ onSelectConversation, onConversationCreated }) => {
                                             src={
                                                 otherUser.profileImage.startsWith("http")
                                                     ? otherUser.profileImage
-                                                    : `https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com${otherUser.profileImage}`
+                                                    : `https://real-time-chat-app-backend-1qh4.onrender.com${otherUser.profileImage}`
                                             }
                                             alt={otherUser.name}
                                             className="w-12 h-12 shrink-0 rounded-full object-cover border border-gray-200"

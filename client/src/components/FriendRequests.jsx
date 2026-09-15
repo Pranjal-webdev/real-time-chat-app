@@ -12,7 +12,7 @@ const FriendRequests = ({ onConversationCreated }) => {
     const fetchRequests = async () => {
         try {
             const response = await axios.get(
-                "https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/received",
+                "https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/received",
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -48,7 +48,7 @@ const FriendRequests = ({ onConversationCreated }) => {
             const token = localStorage.getItem("token");
 
             const response = await axios.post(
-                `https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/${requestId}/accept`,
+                `https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/${requestId}/accept`,
                 {},
                 {
                     headers: {
@@ -92,7 +92,7 @@ const FriendRequests = ({ onConversationCreated }) => {
             const token = localStorage.getItem("token");
 
             await axios.post(
-                `https://https://real-time-chat-app-backend-1qh4.onrender.com://https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/${requestId}/reject`,
+                `https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/${requestId}/reject`,
                 {},
                 {
                     headers: {
