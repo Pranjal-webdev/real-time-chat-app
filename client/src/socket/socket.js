@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL = "http://localhost:5001";
+const SOCKET_URL = "http://https://real-time-chat-app-backend-1qh4.onrender.com";
 
 const socket = io(SOCKET_URL, {
     autoConnect: false,

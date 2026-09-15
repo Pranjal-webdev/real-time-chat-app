@@ -14,7 +14,7 @@ const FriendsPage = () => {
                 const token = localStorage.getItem("token");
 
                 const response = await axios.get(
-                    "http://localhost:5001/api/friend-requests/friends",
+                    "http://https://real-time-chat-app-backend-1qh4.onrender.com/api/friend-requests/friends",
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -41,7 +41,7 @@ const FriendsPage = () => {
             const token = localStorage.getItem("token");
 
             const response = await axios.get(
-                "http://localhost:5001/api/conversations",
+                "http://https://real-time-chat-app-backend-1qh4.onrender.com/api/conversations",
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -149,7 +149,7 @@ const FriendsPage = () => {
                                                     "http"
                                                 )
                                                     ? friend.profileImage
-                                                    : `http://localhost:5001${friend.profileImage}`
+                                                    : `http://https://real-time-chat-app-backend-1qh4.onrender.com${friend.profileImage}`
                                             }
                                             alt={friend.name}
                                             className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-full object-cover"
