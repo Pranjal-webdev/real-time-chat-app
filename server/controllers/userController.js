@@ -1,7 +1,8 @@
 import User from "../models/User.js";
+import cloudinary from "../config/cloudinary.js";
 
 export const searchUsers = async (req, res) => {
-    
+
     try {
         const { search } = req.query;
 
@@ -13,7 +14,7 @@ export const searchUsers = async (req, res) => {
         }
 
         const users = await User.find({
-    
+
             $or: [
                 {
                     name: {
@@ -46,6 +47,7 @@ export const searchUsers = async (req, res) => {
 
 
 export const updateProfileImage = async (req, res) => {
+
     try {
         if (!req.file) {
             return res.status(400).json({
@@ -54,7 +56,23 @@ export const updateProfileImage = async (req, res) => {
             });
         }
 
-        const profileImage = `/uploads/${req.file.filename}`;
+        const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: "chat-app/profile-images",
+                    resource_type: "image",
+                },
+                (error, result) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(result);
+                    }
+                }
+            );
+
+            stream.end(req.file.buffer);
+        });
 
         const user = await User.findByIdAndUpdate(
             req.user._id,

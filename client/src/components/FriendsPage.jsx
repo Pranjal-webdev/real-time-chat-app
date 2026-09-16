@@ -85,7 +85,7 @@ const FriendsPage = () => {
 
                     <button
                         type="button"
-                        onClick={() => window.location.assign("/chat")}
+                        onClick={() =>  navigate("/chat")}
                         className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-xl"
                     >
                         ❮
