@@ -76,7 +76,7 @@ export const updateProfileImage = async (req, res) => {
 
         const user = await User.findByIdAndUpdate(
             req.user._id,
-            { profileImage },
+            { profileImage: uploadResult.secure_url },
             { new: true }
         ).select("_id name email profileImage");
 
