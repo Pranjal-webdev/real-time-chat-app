@@ -1,16 +1,119 @@
-# React + Vite
+# 💬 Real-Time Chat App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack real-time chat application built using the MERN stack.  
+Users can register, login, search for users, send friend requests and communicate through real-time messaging.
 
-Currently, two official plugins are available:
+## 🚀 Live Demo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Frontend: https://real-time-chat-app-two-wine.vercel.app
 
-## React Compiler
+Backend: https://real-time-chat-app-backend-1qh4.onrender.com
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## ✨ Features
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- User registration and login
+- JWT-based authentication
+- Protected API routes
+- Search users by name or email
+- Send and manage friend requests
+- Accept and reject friend requests
+- Friends list
+- One-to-one conversations
+- Real-time messaging using Socket.IO
+- Online/offline user status
+- Typing indicator
+- Read/unread messages
+- Edit messages
+- Delete messages
+- Message reactions
+- Image message/file upload
+- Profile picture upload
+- Cloudinary image storage
+- Responsive chat interface
+- MongoDB database
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- React.js
+- React Router
+- Tailwind CSS
+- Axios
+- Socket.IO Client
+- Vite
+
+### Backend
+- Node.js
+- Express.js
+- Socket.IO
+- JWT
+- Bcrypt
+- Multer
+- Cloudinary
+
+### Database
+- MongoDB
+- Mongoose
+
+### Deployment
+- Vercel — Frontend
+- Render — Backend
+- MongoDB Atlas — Database
+- Cloudinary — Image Storage
+
+---
+
+## 📁 Project Structure
+
+```text
+real-time-chat-app/
+│
+├── client/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── socket/
+│   │   └── App.jsx
+│   │
+│   ├── package.json
+│   └── vite.config.js
+│
+├── server/
+│   ├── config/
+│   │   └── cloudinary.js
+│   │
+│   ├── controllers/
+│   │   ├── authController.js
+│   │   ├── conversationController.js
+│   │   ├── friendRequestController.js
+│   │   ├── messageController.js
+│   │   └── userController.js
+│   │
+│   ├── middleware/
+│   │   ├── authMiddleware.js
+│   │   └── uploadMiddleware.js
+│   │
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Conversation.js
+│   │   └── Message.js
+│   │
+│   ├── routes/
+│   │   ├── authRoutes.js
+│   │   ├── conversationRoutes.js
+│   │   ├── friendRequestRoutes.js
+│   │   ├── messageRoutes.js
+│   │   └── userRoutes.js
+│   │
+│   ├── socket/
+│   │   └── socket.js
+│   │
+│   ├── server.js
+│   └── package.json
+│
+└── README.md
