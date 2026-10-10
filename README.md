@@ -43,7 +43,7 @@ Backend: https://real-time-chat-app-backend-1qh4.onrender.com
 - React Router
 - Tailwind CSS
 - Axios
-- Socket.IO Client
+- Socket.IO 
 - Vite
 
 ### Backend
