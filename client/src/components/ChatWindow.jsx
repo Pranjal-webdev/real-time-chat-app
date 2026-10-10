@@ -52,9 +52,9 @@ const ChatWindow = ({ conversation, onBack }) => {
         if (!message?.fileUrl) return;
 
         try {
-            const requestUrl =
-                `https://real-time-chat-app-backend-1qh4.onrender.com${message.fileUrl}`;
-
+            const requestUrl = message.fileUrl.startsWith("http")
+                ? message.fileUrl
+                : `https://real-time-chat-app-backend-1qh4.onrender.com${message.fileUrl}`;
             const cache = await getAttachmentCache();
 
             const cachedResponse = await cache.match(requestUrl);
@@ -129,6 +129,43 @@ const ChatWindow = ({ conversation, onBack }) => {
                 ...prev,
                 [message._id]: "download",
             }));
+        }
+    };
+
+
+
+    const downloadAttachment = async (message) => {
+        if (!message?.fileUrl) return;
+
+        let objectUrl;
+
+        try {
+            const requestUrl =
+                `https://real-time-chat-app-backend-1qh4.onrender.com${message.fileUrl}`;
+
+            const response = await fetch(requestUrl);
+
+            if (!response.ok) {
+                throw new Error(`Download failed: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            objectUrl = URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+            link.href = objectUrl;
+            link.download = message.fileName || "download";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+        } catch (error) {
+            console.error("Attachment Download Error:", error);
+            alert("File download failed. Please try again.");
+        } finally {
+            if (objectUrl) {
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+            }
         }
     };
 
@@ -332,13 +369,15 @@ const ChatWindow = ({ conversation, onBack }) => {
 
                 setMessages(fetchedMessages);
 
+
                 fetchedMessages.forEach((message) => {
-                    if (
-                        message.fileUrl &&
-                        (message.messageType === "image" ||
-                            message.messageType === "file")
-                    ) {
-                        loadAttachment(message, false);
+                    if (message.messageType === "image" && message.fileUrl) {
+                        loadAttachment(message, true);
+                    } else if (message.messageType === "file" && message.fileUrl) {
+                        setAttachmentStatus((prev) => ({
+                            ...prev,
+                            [message._id]: "download",
+                        }));
                     }
                 });
 
@@ -477,9 +516,9 @@ const ChatWindow = ({ conversation, onBack }) => {
                 });
 
 
-                
+
                 loadAttachment(message, true);
-                
+
                 return;
             }
 
@@ -816,7 +855,7 @@ const ChatWindow = ({ conversation, onBack }) => {
                                                             <button
                                                                 type="button"
                                                                 onClick={() =>
-                                                                    loadAttachment(message, true)
+                                                                    downloadAttachment(message)
                                                                 }
                                                                 className="flex items-center gap-3 max-w-full"
                                                             >
@@ -1043,12 +1082,8 @@ const ChatWindow = ({ conversation, onBack }) => {
                     });
                 }}
 
-                onMessageSent={(message) => {
-                    setAttachmentStatus((prev) => ({
-                        ...prev,
-                        [message._id]: "loading",
-                    }));
 
+                onMessageSent={(message) => {
                     setMessages((prev) => [...prev, message]);
 
                     requestAnimationFrame(() => {
@@ -1063,12 +1098,14 @@ const ChatWindow = ({ conversation, onBack }) => {
                     setPendingAttachment(null);
                     setReplyTo(null);
 
-                    requestAnimationFrame(() => {
+                    if (message.messageType === "image") {
+                        loadAttachment(message, true);
+                    } else {
                         setAttachmentStatus((prev) => ({
                             ...prev,
-                            [message._id]: "loaded",
+                            [message._id]: "download",
                         }));
-                    })
+                    }
                 }}
             />
 

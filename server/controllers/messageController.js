@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Message from "../models/Message.js";
 import Conversation from "../models/Conversation.js";
 import { getIO } from "../socket/socket.js";
+import cloudinary from "../config/cloudinary.js";
 
 export const sendMessage = async (req, res) => {
 
@@ -378,15 +379,33 @@ export const uploadMessage = async (req, res) => {
             });
         }
 
-        const isImage =
-            req.file.mimetype.startsWith("image/");
+        const isImage = req.file.mimetype.startsWith("image/");
+
+
+        const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: "chat-app/message-images",
+                    resource_type: "image",
+                },
+                (error, result) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(result);
+                    }
+                }
+            );
+
+            stream.end(req.file.buffer);
+        });
 
         const message = await Message.create({
             conversation: conversationId,
             sender: req.user._id,
             text: "",
             messageType: isImage ? "image" : "file",
-            fileUrl: `/uploads/${req.file.filename}`,
+            fileUrl: uploadResult.secure_url,
             fileName: req.file.originalname,
         });
 
@@ -398,31 +417,22 @@ export const uploadMessage = async (req, res) => {
             }
         );
 
-
-        const populatedMessage =
-            await Message.findById(message._id)
-                .populate(
-                    "sender",
-                    "name email profileImage"
-                )
-                .populate({
-                    path: "replyTo",
-                    populate: {
-                        path: "sender",
-                        select: "name email profileImage",
-                    },
-                });
+        const populatedMessage = await Message.findById(message._id)
+            .populate("sender", "name email profileImage")
+            .populate({
+                path: "replyTo",
+                populate: {
+                    path: "sender",
+                    select: "name email profileImage",
+                },
+            });
 
         res.status(201).json({
             success: true,
             message: populatedMessage,
         });
-
     } catch (error) {
-        console.error(
-            "Upload Message Error:",
-            error.message
-        );
+        console.error("Upload Message Error:", error.message);
 
         res.status(500).json({
             success: false,
